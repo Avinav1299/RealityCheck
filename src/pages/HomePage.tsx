@@ -290,7 +290,7 @@ const HomePage: React.FC = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1.8 }}
-          className={`text-center py-16 rounded-3xl backdrop-blur-sm border shadow-xl ${
+          className={`text-center py-16 rounded-3xl backdrop-blur-sm border shadow-xl mb-12 ${
             isDark
               ? 'bg-gradient-to-r from-glow-purple/10 to-glow-pink/10 border-glow-purple/20'
               : 'bg-gradient-to-r from-purple-100/50 to-pink-100/50 border-purple-200'

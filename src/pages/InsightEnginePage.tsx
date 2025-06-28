@@ -119,10 +119,10 @@ const InsightEnginePage: React.FC = () => {
   return (
     <div className={`min-h-screen pt-20 transition-colors duration-300 ${
       isDark 
-        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
-        : 'bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50'
+        ? 'bg-black' 
+        : 'bg-white'
     }`}>
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 pb-12">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -451,16 +451,6 @@ const InsightEnginePage: React.FC = () => {
             </div>
           </motion.div>
         </div>
-      </div>
-
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse ${
-          isDark ? 'bg-purple-500' : 'bg-purple-300'
-        }`}></div>
-        <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse ${
-          isDark ? 'bg-pink-500' : 'bg-pink-300'
-        }`}></div>
       </div>
     </div>
   );

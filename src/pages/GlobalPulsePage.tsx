@@ -156,8 +156,8 @@ const GlobalPulsePage: React.FC = () => {
   return (
     <div className={`min-h-screen pt-20 transition-colors duration-300 ${
       isDark 
-        ? 'bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900' 
-        : 'bg-gradient-to-br from-slate-50 via-purple-50 to-slate-50'
+        ? 'bg-black' 
+        : 'bg-white'
     }`}>
       {/* Header */}
       <motion.header
@@ -280,7 +280,7 @@ const GlobalPulsePage: React.FC = () => {
       </motion.header>
 
       {/* Main Content */}
-      <main className="relative z-10 px-6 py-8">
+      <main className="relative z-10 px-6 py-8 pb-12">
         <div className="max-w-7xl mx-auto">
           {loading ? (
             <motion.div
@@ -351,16 +351,6 @@ const GlobalPulsePage: React.FC = () => {
           )}
         </div>
       </main>
-
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse ${
-          isDark ? 'bg-purple-500' : 'bg-purple-300'
-        }`}></div>
-        <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-70 animate-pulse ${
-          isDark ? 'bg-pink-500' : 'bg-pink-300'
-        }`}></div>
-      </div>
     </div>
   );
 };

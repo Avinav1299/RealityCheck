@@ -282,7 +282,7 @@ The technology represents a significant step forward in the global effort to com
     <div className={`min-h-screen pt-20 transition-colors duration-300 ${
       isDark ? 'bg-black' : 'bg-white'
     }`}>
-      <div className="max-w-6xl mx-auto px-6 py-8">
+      <div className="max-w-6xl mx-auto px-6 py-8 pb-12">
         {/* Breadcrumb */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}

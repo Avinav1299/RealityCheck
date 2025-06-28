@@ -10,14 +10,14 @@ import ArticleDetailPage from './pages/ArticleDetailPage';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 import ThemeProvider from './contexts/ThemeContext';
-import StarfieldBackground from './components/StarfieldBackground';
+import AnimatedBackground from './components/AnimatedBackground';
 
 function App() {
   return (
     <ThemeProvider>
       <Router>
         <div className="min-h-screen transition-colors duration-300 flex flex-col relative">
-          <StarfieldBackground />
+          <AnimatedBackground variant="cubes" intensity="medium" />
           <Navigation />
           <main className="flex-1 relative z-10">
             <Routes>

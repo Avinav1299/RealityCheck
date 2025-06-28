@@ -254,7 +254,7 @@ ${result.realityDigest.nextActions.map(action => `- ${action}`).join('\n')}
     <div className={`min-h-screen pt-20 transition-colors duration-300 ${
       isDark ? 'bg-black' : 'bg-white'
     }`}>
-      <div className="max-w-7xl mx-auto px-6 py-8">
+      <div className="max-w-7xl mx-auto px-6 py-8 pb-12">
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -750,16 +750,6 @@ ${result.realityDigest.nextActions.map(action => `- ${action}`).join('\n')}
             </div>
           </motion.div>
         </div>
-      </div>
-
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse ${
-          isDark ? 'bg-glow-purple' : 'bg-purple-300'
-        }`}></div>
-        <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse ${
-          isDark ? 'bg-glow-pink' : 'bg-pink-300'
-        }`}></div>
       </div>
     </div>
   );

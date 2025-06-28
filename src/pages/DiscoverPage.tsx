@@ -326,7 +326,7 @@ const DiscoverPage: React.FC = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8"
+            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12"
           >
             {filteredArticles.map((article, index) => (
               <motion.div
@@ -472,16 +472,6 @@ const DiscoverPage: React.FC = () => {
             </p>
           </motion.div>
         )}
-      </div>
-
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse ${
-          isDark ? 'bg-glow-purple' : 'bg-purple-300'
-        }`}></div>
-        <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse ${
-          isDark ? 'bg-glow-pink' : 'bg-pink-300'
-        }`}></div>
       </div>
     </div>
   );

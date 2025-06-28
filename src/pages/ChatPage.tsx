@@ -289,38 +289,43 @@ const ChatPage: React.FC = () => {
   };
 
   return (
-    <div className={`min-h-screen pt-20 transition-colors duration-300 ${
+    <div className={`min-h-screen flex flex-col transition-colors duration-300 ${
       isDark ? 'bg-black' : 'bg-white'
     }`}>
-      <div className="max-w-7xl mx-auto px-6 py-8 h-[calc(100vh-5rem)] flex flex-col">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="text-center mb-8"
-        >
-          <div className={`inline-flex items-center space-x-2 px-6 py-3 rounded-full backdrop-blur-sm border mb-4 ${
-            isDark 
-              ? 'bg-white/5 border-white/10 text-glow-purple' 
-              : 'bg-slate-100 border-slate-200 text-purple-700'
-          }`}>
-            <Sparkles className="w-5 h-5" />
-            <span className="font-semibold">Advanced AI Consultation</span>
-          </div>
-          
-          <h1 className={`text-5xl font-bold font-display mb-2 transition-colors ${
-            isDark ? 'text-white' : 'text-slate-900'
-          }`}>
-            Chat
-          </h1>
-          <p className={`text-lg font-body transition-colors ${
-            isDark ? 'text-slate-300' : 'text-slate-600'
-          }`}>
-            Engage with advanced AI models for research, analysis, and strategic guidance
-          </p>
-        </motion.div>
+      {/* Fixed Header */}
+      <div className="pt-20 px-6 py-8 flex-shrink-0">
+        <div className="max-w-7xl mx-auto">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center"
+          >
+            <div className={`inline-flex items-center space-x-2 px-6 py-3 rounded-full backdrop-blur-sm border mb-4 ${
+              isDark 
+                ? 'bg-white/5 border-white/10 text-glow-purple' 
+                : 'bg-slate-100 border-slate-200 text-purple-700'
+            }`}>
+              <Sparkles className="w-5 h-5" />
+              <span className="font-semibold">Advanced AI Consultation</span>
+            </div>
+            
+            <h1 className={`text-5xl font-bold font-display mb-2 transition-colors ${
+              isDark ? 'text-white' : 'text-slate-900'
+            }`}>
+              Chat
+            </h1>
+            <p className={`text-lg font-body transition-colors ${
+              isDark ? 'text-slate-300' : 'text-slate-600'
+            }`}>
+              Engage with advanced AI models for research, analysis, and strategic guidance
+            </p>
+          </motion.div>
+        </div>
+      </div>
 
-        <div className="flex-1 flex gap-6">
+      {/* Main Content - Flex Container */}
+      <div className="flex-1 flex px-6 pb-6">
+        <div className="max-w-7xl mx-auto w-full flex gap-6">
           {/* Sidebar */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
@@ -478,7 +483,7 @@ const ChatPage: React.FC = () => {
                 : 'bg-white border-slate-200'
             }`}>
               {/* Chat Header */}
-              <div className="p-6 border-b border-white/10 flex items-center justify-between">
+              <div className="p-6 border-b border-white/10 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center space-x-3">
                   <div className={`p-2 rounded-xl bg-gradient-to-r ${models.find(m => m.id === selectedModel)?.color}`}>
                     {React.createElement(models.find(m => m.id === selectedModel)?.icon || Brain, { className: "w-5 h-5 text-white" })}
@@ -674,7 +679,7 @@ const ChatPage: React.FC = () => {
               </div>
 
               {/* Input */}
-              <div className="p-6 border-t border-white/10">
+              <div className="p-6 border-t border-white/10 flex-shrink-0">
                 <div className="flex space-x-4">
                   <input
                     type="text"
@@ -720,16 +725,6 @@ const ChatPage: React.FC = () => {
             </div>
           </motion.div>
         </div>
-      </div>
-
-      {/* Background Effects */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className={`absolute -top-40 -right-40 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse ${
-          isDark ? 'bg-glow-purple' : 'bg-purple-300'
-        }`}></div>
-        <div className={`absolute -bottom-40 -left-40 w-80 h-80 rounded-full mix-blend-multiply filter blur-xl opacity-30 animate-pulse ${
-          isDark ? 'bg-glow-pink' : 'bg-pink-300'
-        }`}></div>
       </div>
     </div>
   );
