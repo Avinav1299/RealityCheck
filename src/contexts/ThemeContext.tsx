@@ -20,12 +20,17 @@ interface ThemeProviderProps {
 }
 
 const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
+  // Default to dark mode
   const [isDark, setIsDark] = useState(true);
 
   useEffect(() => {
     const savedTheme = localStorage.getItem('theme');
     if (savedTheme) {
       setIsDark(savedTheme === 'dark');
+    } else {
+      // Default to dark mode if no preference is saved
+      setIsDark(true);
+      localStorage.setItem('theme', 'dark');
     }
   }, []);
 
@@ -33,8 +38,10 @@ const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     localStorage.setItem('theme', isDark ? 'dark' : 'light');
     if (isDark) {
       document.documentElement.classList.add('dark');
+      document.body.style.backgroundColor = '#000000';
     } else {
       document.documentElement.classList.remove('dark');
+      document.body.style.backgroundColor = '#ffffff';
     }
   }, [isDark]);
 

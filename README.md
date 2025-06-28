@@ -4,12 +4,29 @@ Advanced AI-powered intelligence platform that combines real-time media verifica
 
 ## 🚀 Features
 
+### 🧭 **Discover**
+- **Live Intelligence Feed**: Trending articles with AI-powered summaries and insights
+- **Trust Scoring**: Advanced verification metrics for content reliability
+- **Smart Filtering**: Filter by trending, latest, verified, or global content
+- **Tag-Based Discovery**: Explore content by topics and categories
+- **Related Articles**: Connected insights and contextual information
+- **Interactive Cards**: Animated discovery interface with hover effects
+
 ### 🌍 **Global Pulse**
 - **Real-time Media Verification**: Advanced fact-checking across global news sources
 - **TinEye Integration**: Reverse image search to detect manipulated or miscontextualized media
 - **GPT-4 Analysis**: Chain-of-thought reasoning for comprehensive claim verification
 - **Google Fact Check API**: Integration with authoritative fact-checking sources
 - **Live Dashboard**: Real-time updates with sector filtering and search capabilities
+- **Reality Digest**: AI-generated strategic summaries and recommendations
+
+### 📄 **Research**
+- **Document Upload**: Support for PDF, DOCX, and TXT files with drag-and-drop interface
+- **Reality Digest Generation**: Comprehensive AI-powered analysis with key facts extraction
+- **5W Analysis**: Who, What, When, Where, Why connections and insights
+- **Causal Link Mapping**: Identify cause-and-effect relationships with confidence scores
+- **Export Capabilities**: Download reports in PDF or Markdown format
+- **Strategic Recommendations**: AI-generated next actions and implementation guidance
 
 ### 🧠 **Insight Engine**
 - **Document Intelligence**: Upload PDFs, DOCX, and text files for AI-powered analysis
@@ -18,17 +35,26 @@ Advanced AI-powered intelligence platform that combines real-time media verifica
 - **Strategic Recommendations**: Actionable guidance based on document analysis
 - **Category Organization**: Sort by relevance, date, and research domains
 
-### 💬 **Oracle Room**
-- **Multi-Model Chat**: Choose from GPT-4, Mistral, or Ollama models
-- **Research Consultation**: Strategic guidance and expert-level analysis
+### 💬 **Chat**
+- **Multi-Model Support**: Choose from GPT-4, Mistral, or Ollama models
+- **Voice Integration**: Web Speech API for voice queries and responses
+- **Chat History**: Persistent conversation management with local storage
+- **Export Functionality**: Download chat sessions in Markdown format
+- **Real-time Responses**: Advanced AI consultation with typing indicators
+
+### 🔮 **Oracle Room**
+- **Advanced AI Consultation**: Strategic guidance and expert-level analysis
 - **Document Context Integration**: Reference uploaded documents in conversations
 - **Conversation Management**: Save, export, and organize chat sessions
+- **Model Comparison**: Switch between different AI models for varied perspectives
 
 ### 🎨 **Design & Experience**
-- **Futuristic UI**: Glassmorphism effects with floating card designs
-- **Dark/Light Themes**: Seamless theme switching with system preference detection
-- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
+- **Dark Mode First**: Default black (#000000) theme with light mode toggle
+- **Futuristic Typography**: Poppins, Inter, and Space Grotesk fonts
+- **Glowing UI Accents**: Blue/purple glow effects for interactive elements
+- **Glassmorphism Effects**: Floating card designs with backdrop blur
 - **Smooth Animations**: Framer Motion powered interactions and transitions
+- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
 - **Accessibility**: WCAG compliant with keyboard navigation support
 
 ## 🛠 Technology Stack
@@ -36,7 +62,7 @@ Advanced AI-powered intelligence platform that combines real-time media verifica
 ### Frontend
 - **React 18** with TypeScript for type-safe development
 - **Vite** for lightning-fast development and optimized builds
-- **Tailwind CSS** for utility-first styling and responsive design
+- **Tailwind CSS** with custom design system and dark/light themes
 - **Framer Motion** for smooth animations and micro-interactions
 - **React Router** for client-side routing and navigation
 - **React Dropzone** for intuitive file upload experiences
@@ -58,7 +84,13 @@ Advanced AI-powered intelligence platform that combines real-time media verifica
 ### Document Processing
 - **PDF-Parse** for PDF content extraction
 - **Mammoth** for DOCX document processing
+- **jsPDF** for PDF report generation
 - **File Type Detection** for secure upload validation
+
+### Voice & Speech
+- **Web Speech API** for voice input and output
+- **Speech Recognition** for voice-to-text conversion
+- **Speech Synthesis** for text-to-speech responses
 
 ## 📋 Database Schema
 
@@ -69,7 +101,7 @@ Advanced AI-powered intelligence platform that combines real-time media verifica
 - `strategies` - AI-generated strategic recommendations
 - `feedback` - User ratings and community validation
 - `documents` - Uploaded research documents and analysis
-- `chat_sessions` - Oracle Room conversation history
+- `chat_sessions` - Chat conversation history
 
 ## 🔧 Setup Instructions
 
@@ -144,66 +176,80 @@ npm run preview
 
 ## 🎯 User Flow
 
-### 1. **Explore** → Global Pulse
-- Browse real-time verified news across sectors
-- Filter by politics, technology, health, climate, business
+### 1. **Discover** → Intelligence Exploration
+- Browse trending articles with AI summaries and trust scores
+- Filter by content type, topic, and verification status
+- Explore related articles and contextual insights
+- Access detailed analysis and source verification
+
+### 2. **Research** → Document Analysis
+- Upload research documents with contextual information
+- Receive comprehensive Reality Digests with key facts
+- Explore 5W analysis and causal link mapping
+- Download detailed reports in PDF or Markdown format
+
+### 3. **Chat** → AI Consultation
+- Choose from multiple AI models for different use cases
+- Engage in voice-enabled conversations with speech synthesis
+- Maintain persistent chat history with export capabilities
+- Access model-specific capabilities and features
+
+### 4. **Global Pulse** → Media Verification
+- Monitor real-time verified news across sectors
 - View verification badges and confidence scores
 - Access Reality Digest summaries and strategic insights
+- Provide feedback on content accuracy and helpfulness
 
-### 2. **Upload** → Insight Engine
-- Upload research documents (PDF, DOCX, TXT)
-- Define research context and specific questions
-- Receive AI-powered analysis and key insights
-- Get strategic recommendations and next steps
-
-### 3. **Ask** → Oracle Room
-- Choose from multiple AI models (GPT-4, Mistral, Ollama)
-- Engage in research-focused conversations
-- Reference uploaded documents for context
-- Export conversations and insights
-
-### 4. **Strategize** → Integrated Intelligence
-- Combine verification results with document insights
-- Generate comprehensive strategic recommendations
-- Track priority levels and action items
-- Share findings with stakeholders
+### 5. **Insight Engine** → Advanced Analysis
+- Upload documents for AI-powered research insights
+- Define research context for targeted analysis
+- Receive strategic recommendations and next steps
+- Organize results by category and confidence levels
 
 ## 🤖 AI Model Support
 
 ### GPT-4 (OpenAI)
-- **Strengths**: Advanced reasoning, comprehensive analysis
-- **Use Cases**: Complex research questions, strategic planning
-- **Features**: Chain-of-thought reasoning, tool calling
+- **Strengths**: Advanced reasoning, comprehensive analysis, creative problem-solving
+- **Use Cases**: Complex research questions, strategic planning, detailed analysis
+- **Features**: Chain-of-thought reasoning, tool calling, multimodal capabilities
 
 ### Mistral AI
-- **Strengths**: Fast processing, efficient responses
-- **Use Cases**: Quick analysis, real-time verification
-- **Features**: Multilingual support, cost-effective
+- **Strengths**: Fast processing, efficient responses, multilingual support
+- **Use Cases**: Quick analysis, real-time verification, general inquiries
+- **Features**: Efficient processing, cost-effective, multilingual capabilities
 
 ### Ollama (Local)
-- **Strengths**: Privacy-focused, offline processing
-- **Use Cases**: Sensitive documents, air-gapped environments
-- **Features**: Local inference, customizable models
+- **Strengths**: Privacy-focused, offline processing, customizable models
+- **Use Cases**: Sensitive documents, air-gapped environments, custom workflows
+- **Features**: Local inference, privacy protection, custom model support
 
 ## 🎨 UI Design Philosophy
 
-### Futuristic Glassmorphism
-- **Floating Cards**: Elevated design with soft shadows
-- **Backdrop Blur**: Sophisticated transparency effects
-- **Neon Accents**: Strategic use of glowing elements
-- **Smooth Transitions**: Framer Motion powered animations
-
 ### Dark-First Design
-- **Default Dark Theme**: Optimized for extended use
-- **Light Mode Toggle**: Seamless theme switching
-- **High Contrast**: Accessible color combinations
-- **Consistent Branding**: Purple-pink gradient identity
+- **Default Black Theme**: Pure black (#000000) background for optimal contrast
+- **Light Mode Toggle**: Clean white (#ffffff) alternative theme
+- **Glowing Accents**: Blue/purple glow effects for interactive elements
+- **Consistent Branding**: Purple-pink gradient identity throughout
+
+### Futuristic Typography
+- **Display Font**: Space Grotesk for headlines and branding
+- **Body Font**: Poppins for readable content and descriptions
+- **System Font**: Inter as fallback for optimal performance
+- **Font Weights**: Maximum 2 weights for clean hierarchy
+
+### Glassmorphism Effects
+- **Floating Cards**: Elevated design with soft shadows and backdrop blur
+- **Transparency**: Strategic use of opacity for depth and layering
+- **Smooth Transitions**: Framer Motion powered animations
+- **Interactive Feedback**: Hover states and micro-interactions
 
 ### Component Naming Convention
+- **Discover**: Live intelligence exploration and trending content
 - **Global Pulse**: Real-time media verification feed
-- **Insight Engine**: Document analysis and research workspace
-- **Oracle Room**: AI consultation and chat interface
-- **Reality Digest**: Strategic summaries and recommendations
+- **Research**: Document upload and Reality Digest generation
+- **Insight Engine**: Advanced document analysis workspace
+- **Chat**: Multi-model AI conversation interface
+- **Oracle Room**: Advanced AI consultation and strategic planning
 
 ## 🚀 Deployment
 

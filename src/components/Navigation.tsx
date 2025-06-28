@@ -1,7 +1,7 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, Sun, Moon, Zap, Brain, MessageSquare, TrendingUp } from 'lucide-react';
+import { Shield, Sun, Moon, TrendingUp, Brain, Zap, Compass, Upload } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
 const Navigation: React.FC = () => {
@@ -9,9 +9,11 @@ const Navigation: React.FC = () => {
   const location = useLocation();
 
   const navItems = [
+    { path: '/discover', name: 'Discover', icon: Compass },
     { path: '/global-pulse', name: 'Global Pulse', icon: TrendingUp },
+    { path: '/research', name: 'Research', icon: Upload },
     { path: '/insight-engine', name: 'Insight Engine', icon: Brain },
-    { path: '/oracle-room', name: 'Oracle Room', icon: MessageSquare },
+    { path: '/chat', name: 'Chat', icon: Zap },
   ];
 
   return (
@@ -20,7 +22,7 @@ const Navigation: React.FC = () => {
       animate={{ y: 0 }}
       className={`fixed top-0 left-0 right-0 z-50 backdrop-blur-xl border-b transition-all duration-300 ${
         isDark 
-          ? 'bg-slate-900/80 border-slate-700/50' 
+          ? 'bg-black/80 border-slate-800/50' 
           : 'bg-white/80 border-slate-200/50'
       }`}
     >
@@ -32,20 +34,20 @@ const Navigation: React.FC = () => {
               whileHover={{ scale: 1.05, rotate: 5 }}
               className={`p-3 rounded-xl shadow-lg transition-all duration-300 ${
                 isDark
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-purple-500/25'
+                  ? 'bg-gradient-to-r from-glow-purple to-glow-pink shadow-glow-purple/25'
                   : 'bg-gradient-to-r from-purple-500 to-pink-500 shadow-purple-500/25'
               }`}
             >
               <Shield className="w-6 h-6 text-white" />
             </motion.div>
             <div>
-              <span className={`text-xl font-bold transition-colors ${
+              <span className={`text-xl font-bold font-display transition-colors ${
                 isDark ? 'text-white' : 'text-slate-900'
               }`}>
                 RealityCheck AI
               </span>
-              <p className={`text-sm transition-colors ${
-                isDark ? 'text-purple-300' : 'text-purple-600'
+              <p className={`text-sm font-medium transition-colors ${
+                isDark ? 'text-glow-purple' : 'text-purple-600'
               }`}>
                 Advanced Intelligence Platform
               </p>
@@ -53,7 +55,7 @@ const Navigation: React.FC = () => {
           </Link>
 
           {/* Navigation Items */}
-          <div className="hidden md:flex items-center space-x-1">
+          <div className="hidden lg:flex items-center space-x-1">
             {navItems.map((item) => {
               const Icon = item.icon;
               const isActive = location.pathname === item.path;
@@ -66,7 +68,7 @@ const Navigation: React.FC = () => {
                     className={`px-4 py-2 rounded-xl flex items-center space-x-2 transition-all duration-300 ${
                       isActive
                         ? isDark
-                          ? 'bg-purple-600/20 text-purple-300 shadow-lg shadow-purple-500/10'
+                          ? 'bg-glow-purple/20 text-glow-purple shadow-glow-sm'
                           : 'bg-purple-100 text-purple-700 shadow-lg shadow-purple-500/10'
                         : isDark
                           ? 'text-slate-300 hover:bg-slate-800/50 hover:text-white'
