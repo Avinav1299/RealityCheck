@@ -34,7 +34,6 @@ interface TrendingCluster {
 const TrendingPage: React.FC = () => {
   const { isDark } = useTheme();
   const [trendingTopics, setTrendingTopics] = useState<TrendingTopic[]>([]);
-  const [trendingClusters, setTrendingClusters] = useState<TrendingCluster[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [viewMode, setViewMode] = useState<'topics' | 'clusters' | 'heatmap' | 'timeline'>('topics');
@@ -94,37 +93,13 @@ const TrendingPage: React.FC = () => {
       );
 
       setTrendingTopics(enhancedTopics);
-      
-      // Generate trending clusters from topics
-      const clusters = generateTrendingClusters(enhancedTopics);
-      setTrendingClusters(clusters);
     } catch (error) {
       console.error('Error loading trending data:', error);
       // Load enhanced mock data
       setTrendingTopics(generateEnhancedMockTopics());
-      setTrendingClusters(generateEnhancedMockClusters());
     } finally {
       setLoading(false);
     }
-  };
-
-  const generateTrendingClusters = (topics: TrendingTopic[]): TrendingCluster[] => {
-    const clusters: TrendingCluster[] = [];
-    
-    topics.forEach(topic => {
-      const cluster: TrendingCluster = {
-        topic: topic.query,
-        articles: topic.results,
-        score: topic.trending_score,
-        category: topic.category,
-        growth: Math.floor(Math.random() * 50) + 10,
-        sources: [...new Set(topic.results.map((r: any) => extractDomain(r.url)))],
-        image: topic.image
-      };
-      clusters.push(cluster);
-    });
-
-    return clusters.sort((a, b) => b.score - a.score);
   };
 
   const handleSearch = async () => {
@@ -749,23 +724,6 @@ function generateEnhancedMockTopics(): TrendingTopic[] {
       trustScore: Math.floor(Math.random() * 20) + 80
     }
   }));
-}
-
-function generateEnhancedMockClusters(): TrendingCluster[] {
-  return [
-    {
-      topic: 'Artificial Intelligence Breakthroughs',
-      articles: [
-        { title: 'AI Achieves Human-Level Performance', source: 'Tech Today' },
-        { title: 'Machine Learning Revolution Continues', source: 'AI Weekly' }
-      ],
-      score: 95,
-      category: 'technology',
-      growth: 45,
-      sources: ['Tech Today', 'AI Weekly', 'Innovation Hub'],
-      image: generateCategoryImage('technology')
-    }
-  ];
 }
 
 function generateCategoryImage(category: string): string {
