@@ -5,7 +5,6 @@ import {
   Bot, 
   User, 
   Brain, 
-  Settings,
   MessageSquare,
   Sparkles,
   Download,
@@ -15,7 +14,6 @@ import {
   MicOff,
   Volume2,
   VolumeX,
-  History,
   Trash2,
   AlertCircle,
   CheckCircle,
@@ -58,7 +56,6 @@ const ChatPage: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
-  const [ollamaConnected, setOllamaConnected] = useState(false);
   const [isCheckingConnection, setIsCheckingConnection] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
@@ -109,23 +106,18 @@ const ChatPage: React.FC = () => {
     if (savedSessions) {
       setChatSessions(JSON.parse(savedSessions));
     }
-
-    // Skip Ollama connection check for now as requested
-    // checkOllamaConnection();
   }, []);
 
   const checkOllamaConnection = async () => {
     setIsCheckingConnection(true);
     try {
       const connection = await ollamaService.checkConnection();
-      setOllamaConnected(connection.connected);
       if (!connection.connected) {
         setConnectionError('Ollama not connected. Please start Ollama by running "ollama serve" in your terminal.');
       } else {
         setConnectionError(null);
       }
     } catch (error) {
-      setOllamaConnected(false);
       if (error instanceof Error) {
         setConnectionError(error.message);
       } else {
@@ -134,10 +126,6 @@ const ChatPage: React.FC = () => {
     } finally {
       setIsCheckingConnection(false);
     }
-  };
-
-  const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   const startListening = () => {
@@ -173,12 +161,6 @@ const ChatPage: React.FC = () => {
       setConnectionError(`${selectedModelData.provider} API key not configured. Please add your API key in settings.`);
       return;
     }
-
-    // Skip Ollama connection check for now as requested
-    // if (selectedModel.startsWith('ollama-') && !ollamaConnected) {
-    //   setConnectionError('Ollama not connected. Please start Ollama by running "ollama serve" in your terminal.');
-    //   return;
-    // }
 
     setConnectionError(null);
 
@@ -335,11 +317,6 @@ const ChatPage: React.FC = () => {
       return <Key className="w-4 h-4 text-yellow-400" />;
     }
 
-    // Skip Ollama connection check for now
-    // if (selectedModel.startsWith('ollama-') && !ollamaConnected) {
-    //   return <XCircle className="w-4 h-4 text-red-400" />;
-    // }
-
     return <CheckCircle className="w-4 h-4 text-green-400" />;
   };
 
@@ -353,11 +330,6 @@ const ChatPage: React.FC = () => {
     if (selectedModelData.requiresKey && !selectedModelData.isAvailable) {
       return `${selectedModelData.name} (API Key Required)`;
     }
-
-    // Skip Ollama connection check for now
-    // if (selectedModel.startsWith('ollama-') && !ollamaConnected) {
-    //   return `${selectedModelData.name} (Ollama Not Connected)`;
-    // }
 
     return `${selectedModelData.name} (Ready)`;
   };
@@ -374,75 +346,8 @@ const ChatPage: React.FC = () => {
       return false;
     }
     
-    // Skip Ollama connection check for now
-    // if (selectedModel.startsWith('ollama-') && !ollamaConnected) {
-    //   return false;
-    // }
-    
     return true;
   };
-
-  const OllamaSetupGuide = () => (
-    <motion.div
-      initial={{ opacity: 0, y: 10 }}
-      animate={{ opacity: 1, y: 0 }}
-      className={`mt-4 p-6 rounded-2xl border ${
-        isDark
-          ? 'bg-blue-500/10 border-blue-500/20'
-          : 'bg-blue-50 border-blue-200'
-      }`}
-    >
-      <div className="flex items-start space-x-3">
-        <Terminal className="w-6 h-6 text-blue-400 mt-1" />
-        <div className="flex-1">
-          <h3 className={`font-semibold mb-2 ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
-            Ollama Setup Required
-          </h3>
-          <div className={`space-y-2 text-sm ${isDark ? 'text-blue-200' : 'text-blue-600'}`}>
-            <p>To use local AI models, please install and start Ollama:</p>
-            <div className={`bg-black/20 rounded-lg p-3 font-mono text-xs ${
-              isDark ? 'text-blue-100' : 'text-blue-800'
-            }`}>
-              <div># Install Ollama</div>
-              <div>curl -fsSL https://ollama.ai/install.sh | sh</div>
-              <div className="mt-2"># Start Ollama server</div>
-              <div>ollama serve</div>
-              <div className="mt-2"># Install a model</div>
-              <div>ollama pull llama2</div>
-            </div>
-            <div className="flex items-center space-x-2 mt-3">
-              <a
-                href="https://ollama.ai"
-                target="_blank"
-                rel="noopener noreferrer"
-                className={`inline-flex items-center space-x-1 px-3 py-1 rounded-lg transition-colors ${
-                  isDark
-                    ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
-                    : 'bg-blue-200 text-blue-700 hover:bg-blue-300'
-                }`}
-              >
-                <span>Download Ollama</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={checkOllamaConnection}
-                disabled={isCheckingConnection}
-                className={`px-3 py-1 rounded-lg font-medium transition-all duration-300 ${
-                  isDark
-                    ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
-                    : 'bg-blue-200 text-blue-700 hover:bg-blue-300'
-                }`}
-              >
-                {isCheckingConnection ? 'Checking...' : 'Check Connection'}
-              </motion.button>
-            </div>
-          </div>
-        </div>
-      </div>
-    </motion.div>
-  );
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-300 ${
@@ -523,9 +428,6 @@ const ChatPage: React.FC = () => {
                 </div>
               </motion.div>
             )}
-
-            {/* Show Ollama setup guide if not connected - commented out for now */}
-            {/* {selectedModel.startsWith('ollama-') && !ollamaConnected && <OllamaSetupGuide />} */}
           </motion.div>
         </div>
       </div>

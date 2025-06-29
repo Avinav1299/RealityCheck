@@ -1,13 +1,14 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Globe, Zap, Brain, Target, Calendar, Eye, ExternalLink, BarChart3, Activity, Layers, Filter, Search, RefreshCw, Play, Baseline as Timeline, MessageSquare } from 'lucide-react';
+import { TrendingUp, Globe, Brain, Target, Calendar, Eye, ExternalLink, BarChart3, Activity, Layers, Filter, Search, RefreshCw, Baseline as Timeline, MessageSquare } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+// @ts-ignore
 import { searchTrendingTopics, searchSearXNG } from '../services/api/searxng.js';
+// @ts-ignore
 import { generateSmartSummary, generateEventTimeline } from '../services/api/summarization.js';
 import MetricsDashboard, { generateDefaultMetrics } from '../components/charts/MetricsDashboard';
 import TrendingHeatmap from '../components/charts/TrendingHeatmap';
 import TimelineChart from '../components/charts/TimelineChart';
-import { Link } from 'react-router-dom';
 
 interface TrendingTopic {
   query: string;
@@ -44,7 +45,7 @@ const TrendingPage: React.FC = () => {
 
   const categories = [
     { id: 'all', name: 'All Topics', icon: Globe },
-    { id: 'news', name: 'Breaking News', icon: Zap },
+    { id: 'news', name: 'Breaking News', icon: Brain },
     { id: 'technology', name: 'Technology', icon: Brain },
     { id: 'world', name: 'World Events', icon: Globe },
     { id: 'science', name: 'Science', icon: Target },
@@ -65,7 +66,7 @@ const TrendingPage: React.FC = () => {
       
       // Enhance topics with images and analysis
       const enhancedTopics = await Promise.all(
-        (topicsData.trending || []).map(async (topic) => {
+        (topicsData.trending || []).map(async (topic: any) => {
           try {
             // Generate image based on category
             const image = generateCategoryImage(topic.category);
@@ -73,7 +74,7 @@ const TrendingPage: React.FC = () => {
             // Add basic summary
             const summary = {
               tldr: `${topic.query} is currently trending with ${topic.results.length} related articles and high engagement across multiple sources.`,
-              keyPoints: topic.results.slice(0, 3).map(r => r.title),
+              keyPoints: topic.results.slice(0, 3).map((r: any) => r.title),
               trustScore: Math.floor(Math.random() * 30) + 70
             };
 
@@ -117,7 +118,7 @@ const TrendingPage: React.FC = () => {
         score: topic.trending_score,
         category: topic.category,
         growth: Math.floor(Math.random() * 50) + 10,
-        sources: [...new Set(topic.results.map(r => extractDomain(r.url)))],
+        sources: [...new Set(topic.results.map((r: any) => extractDomain(r.url)))],
         image: topic.image
       };
       clusters.push(cluster);
@@ -142,7 +143,7 @@ const TrendingPage: React.FC = () => {
         image: generateCategoryImage('search'),
         summary: {
           tldr: `Search results for "${searchQuery}" reveal ${searchResults.results.length} relevant articles with real-time analysis.`,
-          keyPoints: searchResults.results.slice(0, 3).map(r => r.title),
+          keyPoints: searchResults.results.slice(0, 3).map((r: any) => r.title),
           trustScore: 85
         }
       };
@@ -435,7 +436,6 @@ const TrendingPage: React.FC = () => {
                       </div>
                       <div className="absolute bottom-4 left-4">
                         <div className="bg-black/50 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">
-                          <Play className="w-3 h-3" />
                           <span>LIVE</span>
                         </div>
                       </div>
@@ -457,7 +457,7 @@ const TrendingPage: React.FC = () => {
                       )}
 
                       <div className="space-y-2 mb-4">
-                        {topic.results.slice(0, 2).map((result, idx) => (
+                        {topic.results.slice(0, 2).map((result: any, idx: number) => (
                           <div
                             key={idx}
                             className={`p-2 rounded-xl border transition-all duration-300 ${
@@ -612,7 +612,7 @@ const TrendingPage: React.FC = () => {
                       Key Articles
                     </h3>
                     <div className="space-y-3">
-                      {selectedTopic.results.slice(0, 5).map((result, idx) => (
+                      {selectedTopic.results.slice(0, 5).map((result: any, idx: number) => (
                         <a
                           key={idx}
                           href={result.url}
@@ -736,7 +736,7 @@ function generateEnhancedMockTopics(): TrendingTopic[] {
     }
   ];
 
-  return topics.map((topic, index) => ({
+  return topics.map((topic) => ({
     ...topic,
     results: Array.from({ length: 8 }, (_, i) => ({
       title: `${topic.query} - Breaking Development ${i + 1}`,

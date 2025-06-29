@@ -3,13 +3,11 @@ import { motion } from 'framer-motion';
 import { 
   RefreshCw, 
   Clock, 
-  ExternalLink, 
-  Eye, 
-  TrendingUp,
-  AlertTriangle,
+  Search, 
+  CheckCircle, 
+  AlertTriangle, 
   Globe,
   Play,
-  Image as ImageIcon,
   FileText,
   Zap,
   Brain
@@ -193,10 +191,10 @@ const TodaysInsight: React.FC = () => {
     switch (category) {
       case 'climate': return Globe;
       case 'disaster': return AlertTriangle;
-      case 'global-alert': return TrendingUp;
+      case 'global-alert': return AlertTriangle;
       case 'technology': return Brain;
       case 'health': return FileText;
-      case 'security': return Eye;
+      case 'security': return Search;
       default: return Zap;
     }
   };

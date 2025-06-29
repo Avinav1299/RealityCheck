@@ -1,11 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, Plus, Filter, Search, RefreshCw, TrendingUp, AlertTriangle, CheckCircle, Clock, Activity, Zap, Brain, Target, Globe, Eye, BarChart3 } from 'lucide-react';
+import { Filter, Search, RefreshCw, TrendingUp, AlertTriangle, CheckCircle, Clock, Activity, Zap } from 'lucide-react';
 import ArticleCard from '../components/ArticleCard';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { fetchArticles } from '../functions/fetchArticles';
+// @ts-ignore
 import { searchNews, searchTrendingTopics } from '../services/api/searxng.js';
-import { generateSmartSummary } from '../services/api/summarization.js';
 import { useTheme } from '../contexts/ThemeContext';
 
 interface Article {
@@ -104,7 +103,7 @@ const GlobalPulsePage: React.FC = () => {
           if (error) throw error;
 
           if (data && data.length > 0) {
-            processedArticles = data.map(article => ({
+            processedArticles = data.map((article: any) => ({
               ...article,
               image_check: article.image_checks?.[0],
               text_check: article.text_checks?.[0],
@@ -124,7 +123,7 @@ const GlobalPulsePage: React.FC = () => {
           const newsData = await searchNews(searchQuery, 'day');
           
           // Convert search results to article format
-          processedArticles = newsData.articles.map((article, index) => ({
+          processedArticles = newsData.articles.map((article: any, index: number) => ({
             id: `realtime-${index}`,
             title: article.title,
             content: article.description,
@@ -135,17 +134,17 @@ const GlobalPulsePage: React.FC = () => {
             created_at: new Date().toISOString(),
             // Add mock verification data
             image_check: {
-              status: Math.random() > 0.7 ? 'verified' : Math.random() > 0.5 ? 'suspicious' : 'manipulated',
+              status: (Math.random() > 0.7 ? 'verified' : Math.random() > 0.5 ? 'suspicious' : 'manipulated') as 'verified' | 'suspicious' | 'manipulated',
               confidence_score: Math.floor(Math.random() * 30) + 70,
               match_count: Math.floor(Math.random() * 10)
             },
             text_check: {
-              verification_status: Math.random() > 0.6 ? 'true' : Math.random() > 0.3 ? 'mixed' : 'false',
+              verification_status: (Math.random() > 0.6 ? 'true' : Math.random() > 0.3 ? 'mixed' : 'false') as 'true' | 'false' | 'mixed' | 'unverified',
               confidence_score: Math.floor(Math.random() * 40) + 60
             },
             strategy: {
               summary: `Strategic analysis of ${article.title.substring(0, 50)}... reveals key implications for stakeholders.`,
-              priority_level: Math.random() > 0.7 ? 'high' : Math.random() > 0.4 ? 'medium' : 'low'
+              priority_level: (Math.random() > 0.7 ? 'high' : Math.random() > 0.4 ? 'medium' : 'low') as 'low' | 'medium' | 'high' | 'critical'
             }
           }));
         } catch (error) {
@@ -227,17 +226,17 @@ const GlobalPulsePage: React.FC = () => {
         published_at: publishedTime.toISOString(),
         created_at: new Date().toISOString(),
         image_check: {
-          status: Math.random() > 0.7 ? 'verified' : Math.random() > 0.5 ? 'suspicious' : 'manipulated',
+          status: (Math.random() > 0.7 ? 'verified' : Math.random() > 0.5 ? 'suspicious' : 'manipulated') as 'verified' | 'suspicious' | 'manipulated',
           confidence_score: Math.floor(Math.random() * 30) + 70,
           match_count: Math.floor(Math.random() * 10)
         },
         text_check: {
-          verification_status: Math.random() > 0.6 ? 'true' : Math.random() > 0.3 ? 'mixed' : 'false',
+          verification_status: (Math.random() > 0.6 ? 'true' : Math.random() > 0.3 ? 'mixed' : 'false') as 'true' | 'false' | 'mixed' | 'unverified',
           confidence_score: Math.floor(Math.random() * 40) + 60
         },
         strategy: {
           summary: `Strategic analysis reveals key implications for ${sector} sector with actionable recommendations for stakeholders.`,
-          priority_level: Math.random() > 0.7 ? 'high' : Math.random() > 0.4 ? 'medium' : 'low'
+          priority_level: (Math.random() > 0.7 ? 'high' : Math.random() > 0.4 ? 'medium' : 'low') as 'low' | 'medium' | 'high' | 'critical'
         }
       });
     }
@@ -285,8 +284,8 @@ const GlobalPulsePage: React.FC = () => {
       if (selectedSector === 'all') {
         const trending = await searchTrendingTopics();
         // Process trending topics into articles
-        const trendingArticles = trending.trending?.flatMap(topic => 
-          topic.results.slice(0, 3).map((result, index) => ({
+        const trendingArticles = trending.trending?.flatMap((topic: any) => 
+          topic.results.slice(0, 3).map((result: any, index: number) => ({
             id: `trending-${topic.query}-${index}`,
             title: result.title,
             content: result.content || result.title,
@@ -331,7 +330,7 @@ const GlobalPulsePage: React.FC = () => {
     try {
       const searchResults = await searchNews(searchQuery, 'day');
       
-      const searchArticles = searchResults.articles.map((article, index) => ({
+      const searchArticles = searchResults.articles.map((article: any, index: number) => ({
         id: `search-${index}`,
         title: article.title,
         content: article.description,

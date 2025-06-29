@@ -1,9 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { Compass, TrendingUp, Clock, Eye, ExternalLink, Filter, Search, Sparkles, Globe, Zap, Brain, Target, ArrowRight, Calendar, Tag, Play, BookOpen, Baseline as Timeline, Layers, RefreshCw, ChevronLeft, ChevronRight, X } from 'lucide-react';
+import { Search, Sparkles, Brain, RefreshCw, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase, isSupabaseConfigured } from '../lib/supabase';
-import { searchNews, searchTrendingTopics, searchSearXNG } from '../services/api/searxng.js';
+// @ts-ignore
+import { searchSearXNG } from '../services/api/searxng.js';
+// @ts-ignore
 import { generateSmartSummary, generateEventTimeline } from '../services/api/summarization.js';
 import { generateEnhancedMockArticle } from '../services/scraping/imageScraper';
 
@@ -32,7 +34,6 @@ interface NewsSection {
 const DiscoverPage: React.FC = () => {
   const { isDark } = useTheme();
   const [newsSections, setNewsSections] = useState<NewsSection[]>([]);
-  const [trendingTopics, setTrendingTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
@@ -42,13 +43,13 @@ const DiscoverPage: React.FC = () => {
   const [loadingTimeline, setLoadingTimeline] = useState(false);
 
   const categories = [
-    { id: 'trending', name: 'Trending Now', icon: TrendingUp, color: 'from-red-500 to-orange-500' },
-    { id: 'technology', name: 'Technology', icon: Zap, color: 'from-blue-500 to-cyan-500' },
+    { id: 'trending', name: 'Trending Now', icon: Brain, color: 'from-red-500 to-orange-500' },
+    { id: 'technology', name: 'Technology', icon: Brain, color: 'from-blue-500 to-cyan-500' },
     { id: 'health', name: 'Health', icon: Brain, color: 'from-green-500 to-emerald-500' },
-    { id: 'politics', name: 'Politics', icon: Target, color: 'from-purple-500 to-pink-500' },
-    { id: 'climate', name: 'Climate', icon: Globe, color: 'from-teal-500 to-blue-500' },
-    { id: 'business', name: 'Business', icon: TrendingUp, color: 'from-yellow-500 to-orange-500' },
-    { id: 'science', name: 'Science', icon: BookOpen, color: 'from-indigo-500 to-purple-500' }
+    { id: 'politics', name: 'Politics', icon: Brain, color: 'from-purple-500 to-pink-500' },
+    { id: 'climate', name: 'Climate', icon: Brain, color: 'from-teal-500 to-blue-500' },
+    { id: 'business', name: 'Business', icon: Brain, color: 'from-yellow-500 to-orange-500' },
+    { id: 'science', name: 'Science', icon: Brain, color: 'from-indigo-500 to-purple-500' }
   ];
 
   useEffect(() => {
@@ -156,7 +157,7 @@ const DiscoverPage: React.FC = () => {
       
       try {
         const searchResults = await searchSearXNG(searchQuery, ['news', 'general']);
-        searchArticles = searchResults.results.map(result => ({
+        searchArticles = searchResults.results.map((result: any) => ({
           id: Math.random().toString(36).substr(2, 9),
           title: result.title,
           description: result.content || result.title,
@@ -500,7 +501,6 @@ const DiscoverPage: React.FC = () => {
                             {/* Meta Info */}
                             <div className="flex items-center justify-between text-xs">
                               <div className="flex items-center space-x-2">
-                                <Calendar className="w-3 h-3 text-glow-purple" />
                                 <span className={`transition-colors ${
                                   isDark ? 'text-slate-400' : 'text-slate-600'
                                 }`}>
@@ -546,7 +546,6 @@ const DiscoverPage: React.FC = () => {
                                     : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
                                 }`}
                               >
-                                <Timeline className="w-3 h-3" />
                                 <span>Timeline</span>
                               </motion.button>
                             </div>
@@ -681,7 +680,7 @@ const DiscoverPage: React.FC = () => {
                     </div>
                   </div>
 
-                  {/* Trust Score & Related Topics */}
+                  {/* Trust Score */}
                   <div className="flex items-center justify-between">
                     <div className={`px-4 py-2 rounded-full text-sm font-semibold ${
                       selectedArticle.summary.trustScore >= 90
@@ -692,19 +691,6 @@ const DiscoverPage: React.FC = () => {
                     }`}>
                       Trust Score: {selectedArticle.summary.trustScore}%
                     </div>
-                    <a
-                      href={selectedArticle.url}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center space-x-2 ${
-                        isDark
-                          ? 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
-                          : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
-                      }`}
-                    >
-                      <span>Read Original</span>
-                      <ExternalLink className="w-4 h-4" />
-                    </a>
                   </div>
                 </div>
               ) : (
@@ -758,7 +744,7 @@ const DiscoverPage: React.FC = () => {
 
               {loadingTimeline ? (
                 <div className="text-center py-12">
-                  <Timeline className="w-12 h-12 text-glow-purple mx-auto mb-4 animate-pulse" />
+                  <Brain className="w-12 h-12 text-glow-purple mx-auto mb-4 animate-pulse" />
                   <p className={`text-lg font-semibold transition-colors ${
                     isDark ? 'text-white' : 'text-slate-900'
                   }`}>

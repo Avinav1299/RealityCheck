@@ -53,7 +53,7 @@ const Footer: React.FC = () => {
 
           {/* Footer Links */}
           <div className="flex flex-wrap items-center justify-center gap-6">
-            {footerLinks.map((link, index) => (
+            {footerLinks.map((link) => (
               <motion.a
                 key={link.name}
                 href={link.href}

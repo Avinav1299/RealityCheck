@@ -11,7 +11,6 @@ import {
   XCircle,
   Share2,
   Bookmark,
-  TrendingUp,
   Calendar,
   Globe,
   Tag,
@@ -185,7 +184,7 @@ The technology represents a significant step forward in the global effort to com
     loadArticle();
   }, [id]);
 
-  const getVerificationBadge = (status: string, confidence: number) => {
+  const getVerificationBadge = (status: string) => {
     switch (status) {
       case 'verified':
       case 'true':
@@ -275,8 +274,8 @@ The technology represents a significant step forward in the global effort to com
     );
   }
 
-  const imageBadge = getVerificationBadge(article.image_check?.status || 'unverified', article.image_check?.confidence_score || 0);
-  const textBadge = getVerificationBadge(article.text_check?.verification_status || 'unverified', article.text_check?.confidence_score || 0);
+  const imageBadge = getVerificationBadge(article.image_check?.status || 'unverified');
+  const textBadge = getVerificationBadge(article.text_check?.verification_status || 'unverified');
 
   return (
     <div className={`min-h-screen pt-20 transition-colors duration-300 ${
