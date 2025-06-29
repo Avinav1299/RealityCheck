@@ -5,14 +5,12 @@ import {
   Eye, 
   Brain, 
   MessageSquare, 
-  Upload, 
   TrendingUp, 
   Shield, 
   Zap,
   ArrowRight,
   Sparkles,
   Globe,
-  Search,
   Compass,
   Target,
   Activity,
@@ -44,20 +42,12 @@ const HomePage: React.FC = () => {
       delay: 0.2
     },
     {
-      icon: Upload,
-      title: 'Research',
-      description: 'Upload documents and receive comprehensive Reality Digests with strategic insights',
-      path: '/research',
-      color: 'from-green-500 to-emerald-500',
-      delay: 0.3
-    },
-    {
       icon: Brain,
       title: 'Insight Engine',
       description: 'Advanced document analysis with AI-powered research insights and recommendations',
       path: '/insight-engine',
       color: 'from-purple-500 to-pink-500',
-      delay: 0.4
+      delay: 0.3
     },
     {
       icon: Zap,
@@ -65,7 +55,7 @@ const HomePage: React.FC = () => {
       description: 'Engage with multiple AI models for research, analysis, and strategic guidance',
       path: '/chat',
       color: 'from-orange-500 to-red-500',
-      delay: 0.5
+      delay: 0.4
     }
   ];
 
@@ -150,7 +140,7 @@ const HomePage: React.FC = () => {
               </motion.button>
             </Link>
             
-            <Link to="/research">
+            <Link to="/insight-engine">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
@@ -160,8 +150,8 @@ const HomePage: React.FC = () => {
                     : 'bg-white/70 border-slate-200 text-slate-700 hover:bg-white'
                 }`}
               >
-                <Upload className="w-6 h-6" />
-                <span>Upload for Research</span>
+                <Brain className="w-6 h-6" />
+                <span>Upload for Analysis</span>
               </motion.button>
             </Link>
           </motion.div>
@@ -182,7 +172,7 @@ const HomePage: React.FC = () => {
           initial={{ opacity: 0, y: 40 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.8, delay: 1.2 }}
-          className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-20"
+          className="grid md:grid-cols-2 lg:grid-cols-2 gap-8 mb-20"
         >
           {features.map((feature, index) => {
             const Icon = feature.icon;

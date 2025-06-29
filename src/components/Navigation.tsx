@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, Sun, Moon, TrendingUp, Brain, Zap, Compass, Upload, Settings } from 'lucide-react';
+import { Shield, Sun, Moon, TrendingUp, Brain, Zap, Compass, Settings } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import SettingsPanel from './SettingsPanel';
 
@@ -13,7 +13,6 @@ const Navigation: React.FC = () => {
   const navItems = [
     { path: '/discover', name: 'Discover', icon: Compass },
     { path: '/global-pulse', name: 'Global Pulse', icon: TrendingUp },
-    { path: '/research', name: 'Research', icon: Upload },
     { path: '/insight-engine', name: 'Insight Engine', icon: Brain },
     { path: '/chat', name: 'Chat', icon: Zap },
   ];

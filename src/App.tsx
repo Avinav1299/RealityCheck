@@ -4,7 +4,6 @@ import HomePage from './pages/HomePage';
 import GlobalPulsePage from './pages/GlobalPulsePage';
 import InsightEnginePage from './pages/InsightEnginePage';
 import DiscoverPage from './pages/DiscoverPage';
-import ResearchPage from './pages/ResearchPage';
 import ChatPage from './pages/ChatPage';
 import ArticleDetailPage from './pages/ArticleDetailPage';
 import Navigation from './components/Navigation';
@@ -25,7 +24,6 @@ function App() {
               <Route path="/global-pulse" element={<GlobalPulsePage />} />
               <Route path="/insight-engine" element={<InsightEnginePage />} />
               <Route path="/discover" element={<DiscoverPage />} />
-              <Route path="/research" element={<ResearchPage />} />
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/article/:id" element={<ArticleDetailPage />} />
             </Routes>
