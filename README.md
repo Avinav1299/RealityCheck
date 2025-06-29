@@ -14,9 +14,9 @@ Advanced AI-powered intelligence platform that combines real-time media verifica
 
 ### 🌍 **Global Pulse**
 - **Real-time Media Verification**: Advanced fact-checking across global news sources
-- **TinEye Integration**: Reverse image search to detect manipulated or miscontextualized media
-- **GPT-4 Analysis**: Chain-of-thought reasoning for comprehensive claim verification
-- **Google Fact Check API**: Integration with authoritative fact-checking sources
+- **Enhanced Image Verification**: Bing Image Search integration for reverse image analysis
+- **GPT-4 Analysis**: Chain-of-thought reasoning with Wikipedia context for comprehensive claim verification
+- **Multiple Source Integration**: NewsAPI, Wikipedia, and RSS feeds for comprehensive coverage
 - **Live Dashboard**: Real-time updates with sector filtering and search capabilities
 - **Reality Digest**: AI-generated strategic summaries and recommendations
 
@@ -69,9 +69,10 @@ Advanced AI-powered intelligence platform that combines real-time media verifica
 
 ### AI & APIs
 - **OpenAI GPT-4** for advanced text analysis and conversation
-- **TinEye API** for reverse image search and manipulation detection
-- **Google Fact Check API** for authoritative verification sources
+- **Bing Image Search API** for reverse image search and manipulation detection
+- **Google APIs** for enhanced search and NLP capabilities
 - **NewsAPI** for real-time news article fetching
+- **Wikipedia API** for contextual information and fact verification
 - **Mistral AI** for fast and efficient language processing
 - **Ollama** for local model processing and privacy
 
@@ -96,8 +97,8 @@ Advanced AI-powered intelligence platform that combines real-time media verifica
 
 ### Core Tables
 - `articles` - News articles and media content
-- `image_checks` - TinEye verification results and metadata
-- `text_checks` - GPT + Fact Check API analysis results
+- `image_checks` - Enhanced image verification results and metadata
+- `text_checks` - GPT + Wikipedia + Fact Check API analysis results
 - `strategies` - AI-generated strategic recommendations
 - `feedback` - User ratings and community validation
 - `documents` - Uploaded research documents and analysis
@@ -114,19 +115,23 @@ Create a `.env` file with the following variables:
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# AI Model APIs
-VITE_OPENAI_API_KEY=your_openai_api_key
-VITE_MISTRAL_API_KEY=your_mistral_api_key
-
-# Verification APIs
+# Primary API Keys
 VITE_NEWSAPI_KEY=your_newsapi_key
+VITE_OPENAI_API_KEY=your_openai_api_key
+
+# Enhanced API Keys
+VITE_GOOGLE_API_KEY=your_google_api_key
+VITE_BING_IMAGE_API_KEY=your_bing_image_search_api_key
+
+# Free/Open APIs
+VITE_WIKI_API_BASE=https://en.wikipedia.org/w/api.php
+
+# Settings
+VITE_USE_FREE_SOURCES_ONLY=false
+
+# Legacy APIs (Optional)
 VITE_TINEYE_API_KEY=your_tineye_api_key
 VITE_TINEYE_PRIVATE_KEY=your_tineye_private_key
-VITE_GOOGLE_API_KEY=your_google_api_key
-
-# Optional: Custom Configuration
-VITE_OLLAMA_BASE_URL=http://localhost:11434
-VITE_CUSTOM_API_BASE_URL=https://your-api.com
 ```
 
 ### 2. Database Setup
@@ -138,27 +143,40 @@ VITE_CUSTOM_API_BASE_URL=https://your-api.com
 
 ### 3. API Key Configuration
 
-#### OpenAI API
+#### NewsAPI (Primary News Source)
+1. Create account at [NewsAPI](https://newsapi.org)
+2. Get your API key (100 requests/day free)
+3. Add to environment variables
+
+#### OpenAI API (Text Analysis)
 1. Create account at [OpenAI Platform](https://platform.openai.com)
 2. Generate API key with GPT-4 access
 3. Add to environment variables
 
-#### TinEye API
-1. Sign up at [TinEye API](https://tineye.com/api)
-2. Get your API key and private key
+#### Bing Image Search API (Image Verification)
+1. Sign up at [Azure Cognitive Services](https://azure.microsoft.com/en-us/services/cognitive-services/bing-image-search-api/)
+2. Get your Bing Search API key
 3. Add to environment variables
 
-#### NewsAPI
-1. Register at [NewsAPI](https://newsapi.org)
-2. Get your free API key (100 requests/day)
-3. Add to environment variables
-
-#### Google Fact Check API
-1. Enable Fact Check Tools API in Google Cloud Console
+#### Google APIs (Enhanced Search & NLP)
+1. Enable relevant APIs in Google Cloud Console
 2. Create credentials and get API key
 3. Add to environment variables
 
-### 4. Development
+#### Wikipedia API (Always Available)
+- No API key required
+- Uses public Wikipedia API endpoints
+- Provides contextual information and fact verification
+
+### 4. Free Sources Mode
+
+Enable "Use Free Sources Only" in settings to rely exclusively on:
+- **Wikipedia API** for contextual information
+- **RSS Feeds** for news content
+- **Open APIs** for basic functionality
+- **Mock Data** for development and testing
+
+### 5. Development
 
 ```bash
 # Install dependencies
@@ -211,7 +229,7 @@ npm run preview
 ### GPT-4 (OpenAI)
 - **Strengths**: Advanced reasoning, comprehensive analysis, creative problem-solving
 - **Use Cases**: Complex research questions, strategic planning, detailed analysis
-- **Features**: Chain-of-thought reasoning, tool calling, multimodal capabilities
+- **Features**: Chain-of-thought reasoning, Wikipedia context integration, multimodal capabilities
 
 ### Mistral AI
 - **Strengths**: Fast processing, efficient responses, multilingual support
@@ -222,6 +240,26 @@ npm run preview
 - **Strengths**: Privacy-focused, offline processing, customizable models
 - **Use Cases**: Sensitive documents, air-gapped environments, custom workflows
 - **Features**: Local inference, privacy protection, custom model support
+
+## 🔗 API Services & Alternatives
+
+### Primary Services
+- **NewsAPI**: Real-time news articles (100 requests/day free)
+- **OpenAI GPT-4**: Advanced text analysis and reasoning
+- **Bing Image Search**: Reverse image search and verification
+- **Google APIs**: Enhanced search and NLP capabilities
+
+### Free Alternatives
+- **Wikipedia API**: Always available, no API key required
+- **RSS Feeds**: Multiple news sources for content aggregation
+- **Mock Intelligence**: Realistic fallback data for development
+- **Open APIs**: Community-driven data sources
+
+### Fallback Strategy
+1. **Primary APIs**: Use commercial services when available
+2. **Free Sources**: Fall back to Wikipedia and RSS feeds
+3. **Mock Data**: Provide realistic data for development and demos
+4. **Graceful Degradation**: Maintain functionality regardless of API availability
 
 ## 🎨 UI Design Philosophy
 
