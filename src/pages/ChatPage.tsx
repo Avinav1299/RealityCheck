@@ -18,7 +18,8 @@ import {
   VolumeX,
   History,
   Trash2,
-  Key
+  Key,
+  AlertCircle
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useApiKeys } from '../contexts/ApiKeyContext';
@@ -32,6 +33,7 @@ interface Message {
   content: string;
   timestamp: Date;
   model?: string;
+  error?: boolean;
 }
 
 interface ChatSession {
@@ -53,6 +55,7 @@ const ChatPage: React.FC = () => {
   const [isListening, setIsListening] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(false);
   const [showApiKeyManager, setShowApiKeyManager] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
@@ -126,6 +129,9 @@ const ChatPage: React.FC = () => {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
+    // Clear any previous connection errors
+    setConnectionError(null);
+
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
@@ -153,14 +159,17 @@ const ChatPage: React.FC = () => {
         type: 'assistant',
         content: response.content,
         timestamp: new Date(),
-        model: response.model
+        model: response.model,
+        error: response.model.includes('(mock)')
       };
 
       const updatedMessages = [...newMessages, aiResponse];
       setMessages(updatedMessages);
 
-      // Speak the response if enabled
-      speakMessage(aiResponse.content);
+      // Speak the response if enabled and it's not a mock response
+      if (!aiResponse.error) {
+        speakMessage(aiResponse.content);
+      }
 
       // Save to current session
       if (currentSessionId) {
@@ -169,12 +178,18 @@ const ChatPage: React.FC = () => {
     } catch (error) {
       console.error('AI response error:', error);
       
+      // Set connection error for display
+      if (error instanceof Error) {
+        setConnectionError(error.message);
+      }
+      
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: 'I apologize, but I encountered an error processing your request. Please check your API key configuration in settings.',
+        content: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
         timestamp: new Date(),
-        model: selectedModel
+        model: selectedModel,
+        error: true
       };
 
       setMessages([...newMessages, errorMessage]);
@@ -196,6 +211,7 @@ const ChatPage: React.FC = () => {
     setChatSessions(updatedSessions);
     setCurrentSessionId(newSession.id);
     setMessages([]);
+    setConnectionError(null);
     localStorage.setItem('chatSessions', JSON.stringify(updatedSessions));
   };
 
@@ -204,6 +220,7 @@ const ChatPage: React.FC = () => {
     if (session) {
       setCurrentSessionId(sessionId);
       setMessages(session.messages);
+      setConnectionError(null);
     }
   };
 
@@ -228,6 +245,7 @@ const ChatPage: React.FC = () => {
     if (currentSessionId === sessionId) {
       setCurrentSessionId(null);
       setMessages([]);
+      setConnectionError(null);
     }
   };
 
@@ -253,6 +271,7 @@ const ChatPage: React.FC = () => {
 
   const clearChat = () => {
     setMessages([]);
+    setConnectionError(null);
     if (currentSessionId) {
       updateCurrentSession([]);
     }
@@ -320,6 +339,25 @@ const ChatPage: React.FC = () => {
                   >
                     Add Keys
                   </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+            {connectionError && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`mt-4 p-4 rounded-2xl border ${
+                  isDark
+                    ? 'bg-red-500/10 border-red-500/20'
+                    : 'bg-red-50 border-red-200'
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-3">
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                  <span className={`font-medium ${isDark ? 'text-red-300' : 'text-red-700'}`}>
+                    {connectionError}
+                  </span>
                 </div>
               </motion.div>
             )}
@@ -557,12 +595,18 @@ const ChatPage: React.FC = () => {
                           <div className={`p-2 rounded-xl ${
                             message.type === 'user'
                               ? 'bg-gradient-to-r from-glow-purple to-glow-pink'
-                              : isDark
-                                ? 'bg-slate-700'
-                                : 'bg-slate-200'
+                              : message.error
+                                ? isDark
+                                  ? 'bg-red-500/20'
+                                  : 'bg-red-100'
+                                : isDark
+                                  ? 'bg-slate-700'
+                                  : 'bg-slate-200'
                           }`}>
                             {message.type === 'user' ? (
                               <User className="w-5 h-5 text-white" />
+                            ) : message.error ? (
+                              <AlertCircle className={`w-5 h-5 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
                             ) : (
                               <Bot className={`w-5 h-5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`} />
                             )}
@@ -573,9 +617,13 @@ const ChatPage: React.FC = () => {
                               ? isDark
                                 ? 'bg-glow-purple/20 border-glow-purple/30'
                                 : 'bg-purple-100 border-purple-200'
-                              : isDark
-                                ? 'bg-white/5 border-white/10'
-                                : 'bg-slate-50 border-slate-200'
+                              : message.error
+                                ? isDark
+                                  ? 'bg-red-500/10 border-red-500/20'
+                                  : 'bg-red-50 border-red-200'
+                                : isDark
+                                  ? 'bg-white/5 border-white/10'
+                                  : 'bg-slate-50 border-slate-200'
                           }`}>
                             <p className={`transition-colors leading-relaxed ${
                               isDark ? 'text-white' : 'text-slate-900'
@@ -599,7 +647,7 @@ const ChatPage: React.FC = () => {
                                   >
                                     <Copy className="w-4 h-4" />
                                   </button>
-                                  {speechEnabled && (
+                                  {speechEnabled && !message.error && (
                                     <button
                                       onClick={() => speakMessage(message.content)}
                                       className={`p-1 rounded transition-all duration-200 ${
