@@ -696,7 +696,7 @@ const TrendingPage: React.FC = () => {
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh Trends</span>
           </motion.button>
-        </div>
+        </motion.div>
       </div>
     </div>
   );
