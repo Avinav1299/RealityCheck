@@ -91,17 +91,24 @@ const Navigation: React.FC = () => {
           {/* Controls */}
           <div className="flex items-center space-x-3">
             {/* API Key Status Indicator */}
-            <div className={`p-2 rounded-xl transition-all duration-300 ${
-              hasAnyApiKey
-                ? isDark
-                  ? 'bg-green-500/20 text-green-400'
-                  : 'bg-green-100 text-green-600'
-                : isDark
-                  ? 'bg-yellow-500/20 text-yellow-400'
-                  : 'bg-yellow-100 text-yellow-600'
-            }`}>
-              <Key className="w-4 h-4" />
-            </div>
+            <Link to="/settings">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`p-2 rounded-xl transition-all duration-300 ${
+                  hasAnyApiKey
+                    ? isDark
+                      ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                      : 'bg-green-100 text-green-600 hover:bg-green-200'
+                    : isDark
+                      ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                      : 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
+                }`}
+                title={hasAnyApiKey ? 'API Keys Configured' : 'Configure API Keys'}
+              >
+                <Key className="w-4 h-4" />
+              </motion.div>
+            </Link>
 
             {/* Settings Button */}
             <Link to="/settings">

@@ -100,15 +100,8 @@ const ChatPage: React.FC = () => {
     try {
       const connection = await ollamaService.checkConnection();
       setOllamaConnected(connection.connected);
-      
-      if (!connection.connected) {
-        setConnectionError('Ollama not detected. Please start Ollama on your local machine.');
-      } else {
-        setConnectionError(null);
-      }
     } catch (error) {
       setOllamaConnected(false);
-      setConnectionError('Ollama server is not running. Please start Ollama by running "ollama serve" in your terminal, then try again.');
     }
   };
 
@@ -150,7 +143,7 @@ const ChatPage: React.FC = () => {
       return;
     }
 
-    // Check Ollama connection for local models
+    // Check Ollama connection for local models only
     if (selectedModel.startsWith('ollama-') && !ollamaConnected) {
       setConnectionError('Ollama not connected. Please start Ollama and try again.');
       return;
@@ -318,6 +311,44 @@ const ChatPage: React.FC = () => {
     return <CheckCircle className="w-4 h-4 text-green-400" />;
   };
 
+  const getModelStatusText = () => {
+    const selectedModelData = availableModels.find(m => m.id === selectedModel);
+    
+    if (!selectedModelData) {
+      return 'No Model Selected';
+    }
+
+    if (selectedModelData.requiresKey && !selectedModelData.isAvailable) {
+      return `${selectedModelData.name} (API Key Required)`;
+    }
+
+    if (selectedModel.startsWith('ollama-') && !ollamaConnected) {
+      return `${selectedModelData.name} (Ollama Not Connected)`;
+    }
+
+    return `${selectedModelData.name} (Ready)`;
+  };
+
+  const canSendMessage = () => {
+    if (!inputMessage.trim() || isTyping) return false;
+    
+    const selectedModelData = availableModels.find(m => m.id === selectedModel);
+    
+    if (!selectedModelData) return false;
+    
+    // For models requiring API keys, check if available
+    if (selectedModelData.requiresKey && !selectedModelData.isAvailable) {
+      return false;
+    }
+    
+    // For Ollama models, check connection
+    if (selectedModel.startsWith('ollama-') && !ollamaConnected) {
+      return false;
+    }
+    
+    return true;
+  };
+
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-300 ${
       isDark ? 'bg-black' : 'bg-white'
@@ -350,7 +381,7 @@ const ChatPage: React.FC = () => {
               Chat with multiple AI models including local Ollama and cloud providers
             </p>
 
-            {/* Connection Status */}
+            {/* Model Status */}
             <div className="mt-4">
               <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full ${
                 isDark
@@ -361,7 +392,7 @@ const ChatPage: React.FC = () => {
                 <span className={`font-medium text-sm transition-colors ${
                   isDark ? 'text-white' : 'text-slate-900'
                 }`}>
-                  {availableModels.find(m => m.id === selectedModel)?.name || 'No Model Selected'}
+                  {getModelStatusText()}
                 </span>
               </div>
             </div>
@@ -796,7 +827,7 @@ const ChatPage: React.FC = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleSendMessage}
-                    disabled={!inputMessage.trim() || isTyping}
+                    disabled={!canSendMessage()}
                     className="bg-gradient-to-r from-glow-purple to-glow-pink text-white p-4 rounded-2xl shadow-glow hover:shadow-glow-lg transition-all duration-300 disabled:opacity-50"
                   >
                     <Send className="w-5 h-5" />
