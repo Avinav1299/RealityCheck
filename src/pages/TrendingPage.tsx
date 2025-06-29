@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Globe, Brain, Target, Calendar, Eye, ExternalLink, BarChart3, Activity, Layers, Filter, Search, RefreshCw, Baseline as Timeline, MessageSquare } from 'lucide-react';
+import { TrendingUp, Globe, Brain, Target, ExternalLink, BarChart3, Activity, Layers, Search, RefreshCw, Baseline as Timeline } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 // @ts-ignore
 import { searchTrendingTopics, searchSearXNG } from '../services/api/searxng.js';
@@ -208,10 +208,6 @@ const TrendingPage: React.FC = () => {
   const filteredTopics = selectedCategory === 'all' 
     ? trendingTopics 
     : trendingTopics.filter(topic => topic.category === selectedCategory);
-
-  const filteredClusters = selectedCategory === 'all'
-    ? trendingClusters
-    : trendingClusters.filter(cluster => cluster.category === selectedCategory);
 
   const getCategoryColor = (category: string) => {
     const colors = {
@@ -700,7 +696,7 @@ const TrendingPage: React.FC = () => {
             <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
             <span>Refresh Trends</span>
           </motion.button>
-        </motion.div>
+        </div>
       </div>
     </div>
   );
