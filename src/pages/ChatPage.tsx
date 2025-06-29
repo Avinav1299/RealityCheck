@@ -117,7 +117,7 @@ const ChatPage: React.FC = () => {
       }
     } catch (error) {
       setOllamaConnected(false);
-      setConnectionError('Failed to connect to Ollama. Make sure it\'s running on localhost:11434');
+      setConnectionError('Ollama server is not running. Please start Ollama by running "ollama serve" in your terminal, then try again.');
     }
   };
 
