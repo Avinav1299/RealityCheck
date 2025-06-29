@@ -33,7 +33,7 @@ export async function fetchArticles(sector: string = 'general') {
           .from('articles')
           .select('id')
           .eq('url', article.url)
-          .single();
+          .maybeSingle();
 
         if (existingArticle) continue;
 
