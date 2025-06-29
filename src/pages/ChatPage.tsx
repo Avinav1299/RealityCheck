@@ -18,9 +18,7 @@ import {
   AlertCircle,
   CheckCircle,
   XCircle,
-  Key,
-  ExternalLink,
-  Terminal
+  Key
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useApiKeys } from '../contexts/ApiKeyContext';

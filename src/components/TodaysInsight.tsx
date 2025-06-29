@@ -4,7 +4,6 @@ import {
   RefreshCw, 
   Clock, 
   Search, 
-  CheckCircle, 
   AlertTriangle, 
   Globe,
   Play,

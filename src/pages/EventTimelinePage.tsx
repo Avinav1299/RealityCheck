@@ -96,7 +96,7 @@ const EventTimelinePage: React.FC = () => {
       const processedTimeline: EventTimeline = {
         topic,
         events: processedEvents,
-        analysis: generateTimelineAnalysis(topic, processedEvents),
+        analysis: generateTimelineAnalysis(topic),
         generatedAt: new Date().toISOString(),
         knowledgeGraph
       };
@@ -131,7 +131,7 @@ const EventTimelinePage: React.FC = () => {
     return { nodes, links };
   };
 
-  const generateTimelineAnalysis = (topic: string, events: TimelineEvent[]) => {
+  const generateTimelineAnalysis = (topic: string) => {
     return {
       summary: `The timeline for ${topic} shows accelerating development with increasing stakeholder engagement and expert validation.`,
       keyPatterns: [
@@ -190,7 +190,7 @@ const EventTimelinePage: React.FC = () => {
     return {
       topic,
       events,
-      analysis: generateTimelineAnalysis(topic, events),
+      analysis: generateTimelineAnalysis(topic),
       generatedAt: new Date().toISOString(),
       knowledgeGraph: generateKnowledgeGraph(events, topic)
     };

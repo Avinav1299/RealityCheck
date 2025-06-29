@@ -53,8 +53,6 @@ export async function searchWithSearXNG(
   timeRange: string = '',
   maxResults: number = 20
 ) {
-  let lastError: Error | null = null;
-  
   // Try multiple instances
   for (let attempt = 0; attempt < 3; attempt++) {
     const instance = getCurrentInstance();
@@ -111,7 +109,6 @@ export async function searchWithSearXNG(
       };
 
     } catch (error) {
-      lastError = error as Error;
       console.warn(`SearXNG instance ${instance} failed (attempt ${attempt + 1}):`, error);
       
       // Wait before retry
