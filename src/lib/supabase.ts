@@ -1,9 +1,25 @@
 import { createClient } from '@supabase/supabase-js';
 
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://your-project.supabase.co';
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'your-anon-key';
+// Use environment variables with better fallbacks for development
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-export const supabase = createClient(supabaseUrl, supabaseKey);
+// Check if we have valid Supabase credentials
+const hasValidCredentials = supabaseUrl && 
+  supabaseKey && 
+  supabaseUrl !== 'https://your-project.supabase.co' && 
+  supabaseKey !== 'your-anon-key' &&
+  supabaseUrl.startsWith('https://') &&
+  supabaseUrl.includes('.supabase.co');
+
+// Create client with mock credentials if real ones aren't available
+export const supabase = createClient(
+  hasValidCredentials ? supabaseUrl : 'https://mock.supabase.co',
+  hasValidCredentials ? supabaseKey : 'mock-key'
+);
+
+// Export a flag to check if we're using real Supabase
+export const isSupabaseConfigured = hasValidCredentials;
 
 export type Database = {
   public: {

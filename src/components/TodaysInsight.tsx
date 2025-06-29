@@ -10,7 +10,9 @@ import {
   Globe,
   Play,
   Image as ImageIcon,
-  FileText
+  FileText,
+  Zap,
+  Brain
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 
@@ -19,7 +21,7 @@ interface InsightData {
   headline: string;
   timestamp: string;
   source: string;
-  category: 'climate' | 'disaster' | 'global-alert' | 'technology' | 'health';
+  category: 'climate' | 'disaster' | 'global-alert' | 'technology' | 'health' | 'security';
   summary: string;
   imageUrl?: string;
   videoUrl?: string;
@@ -28,6 +30,8 @@ interface InsightData {
   urgencyLevel: 'low' | 'medium' | 'high' | 'critical';
   tags: string[];
   readingTime: number;
+  verificationStatus: 'verified' | 'processing' | 'flagged';
+  aiConfidence: number;
 }
 
 const TodaysInsight: React.FC = () => {
@@ -35,62 +39,109 @@ const TodaysInsight: React.FC = () => {
   const [currentInsight, setCurrentInsight] = useState<InsightData | null>(null);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [autoRefreshEnabled, setAutoRefreshEnabled] = useState(true);
 
   const mockInsights: InsightData[] = [
     {
       id: '1',
-      headline: 'Antarctic Ice Sheet Shows Unprecedented Melting Patterns',
+      headline: 'AI-Powered Verification Systems Detect 15,000 Deepfakes in Real-Time',
       timestamp: new Date().toISOString(),
-      source: 'Climate Research Institute',
-      category: 'climate',
-      summary: 'Satellite data reveals accelerated ice loss in West Antarctica, with implications for global sea level rise. Advanced AI analysis indicates potential tipping point scenarios within the next decade.',
-      imageUrl: 'https://images.pexels.com/photos/1624496/pexels-photo-1624496.jpeg?auto=compress&cs=tinysrgb&w=800',
+      source: 'Global AI Security Network',
+      category: 'technology',
+      summary: 'Advanced neural networks successfully identified and flagged sophisticated deepfake content across major platforms in the last 30 seconds, preventing potential misinformation spread to millions of users.',
+      imageUrl: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=800',
       references: [
-        'Nature Climate Change Journal',
-        'NASA Earth Observatory',
-        'IPCC Assessment Report'
+        'MIT AI Lab Real-time Detection Report',
+        'Stanford Digital Forensics Institute',
+        'Global Platform Security Alliance'
       ],
-      trustScore: 94,
+      trustScore: 96,
       urgencyLevel: 'high',
-      tags: ['Climate Change', 'Antarctica', 'Sea Level', 'Satellite Data'],
-      readingTime: 4
+      tags: ['AI', 'Deepfakes', 'Real-time', 'Security', 'Verification'],
+      readingTime: 3,
+      verificationStatus: 'verified',
+      aiConfidence: 94
     },
     {
       id: '2',
-      headline: 'AI-Powered Early Warning System Prevents Major Earthquake Damage',
-      timestamp: new Date(Date.now() - 3600000).toISOString(),
-      source: 'Global Seismic Network',
-      category: 'disaster',
-      summary: 'Revolutionary machine learning algorithms successfully predicted seismic activity 72 hours in advance, enabling evacuation of 50,000 residents. This breakthrough represents a new era in disaster preparedness.',
-      imageUrl: 'https://images.pexels.com/photos/1670187/pexels-photo-1670187.jpeg?auto=compress&cs=tinysrgb&w=800',
-      videoUrl: 'https://example.com/earthquake-prediction-video',
+      headline: 'Breaking: Quantum Computing Breakthrough Achieved in Live Laboratory',
+      timestamp: new Date(Date.now() - 45000).toISOString(),
+      source: 'Quantum Research Consortium',
+      category: 'technology',
+      summary: 'Scientists achieve stable 1000-qubit quantum state for 12 consecutive seconds, marking a revolutionary milestone in quantum computing stability and practical applications.',
+      imageUrl: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=800',
+      videoUrl: 'https://example.com/quantum-breakthrough',
       references: [
-        'Seismological Research Letters',
-        'UN Disaster Risk Reduction',
-        'MIT Technology Review'
+        'Nature Quantum Information',
+        'IBM Quantum Network',
+        'European Quantum Initiative'
       ],
-      trustScore: 97,
+      trustScore: 98,
       urgencyLevel: 'critical',
-      tags: ['AI', 'Earthquake', 'Early Warning', 'Disaster Prevention'],
-      readingTime: 6
+      tags: ['Quantum', 'Computing', 'Breakthrough', 'Science'],
+      readingTime: 4,
+      verificationStatus: 'verified',
+      aiConfidence: 97
     },
     {
       id: '3',
-      headline: 'Breakthrough Quantum Computing Achievement Reshapes Cybersecurity',
-      timestamp: new Date(Date.now() - 7200000).toISOString(),
-      source: 'Quantum Research Consortium',
-      category: 'technology',
-      summary: 'Scientists achieve 1000-qubit quantum computer milestone, demonstrating ability to break current encryption standards. Global cybersecurity protocols require immediate updates to maintain data protection.',
-      imageUrl: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=800',
+      headline: 'Real-Time Climate Monitoring Detects Rapid Arctic Ice Formation',
+      timestamp: new Date(Date.now() - 120000).toISOString(),
+      source: 'Arctic Climate Observatory',
+      category: 'climate',
+      summary: 'Satellite data reveals unexpected ice formation patterns in the Arctic, with AI models detecting changes occurring 300% faster than historical averages in the past 2 minutes.',
+      imageUrl: 'https://images.pexels.com/photos/1624496/pexels-photo-1624496.jpeg?auto=compress&cs=tinysrgb&w=800',
       references: [
-        'Science Magazine',
-        'IEEE Quantum Computing',
-        'National Security Agency'
+        'NASA Earth Observatory Live Feed',
+        'Arctic Research Station Network',
+        'Climate AI Prediction Models'
       ],
       trustScore: 91,
       urgencyLevel: 'high',
-      tags: ['Quantum Computing', 'Cybersecurity', 'Encryption', 'Technology'],
-      readingTime: 5
+      tags: ['Climate', 'Arctic', 'Real-time', 'Satellite', 'AI'],
+      readingTime: 5,
+      verificationStatus: 'verified',
+      aiConfidence: 89
+    },
+    {
+      id: '4',
+      headline: 'Global Health AI Identifies New Treatment Pattern in 47 Seconds',
+      timestamp: new Date(Date.now() - 180000).toISOString(),
+      source: 'Medical AI Research Network',
+      category: 'health',
+      summary: 'Machine learning algorithms analyzing global health data discovered a novel treatment correlation that could benefit 2.3 million patients worldwide, verified across 15 countries.',
+      imageUrl: 'https://images.pexels.com/photos/3938023/pexels-photo-3938023.jpeg?auto=compress&cs=tinysrgb&w=800',
+      references: [
+        'World Health Organization AI Division',
+        'Global Medical Database Consortium',
+        'International Treatment Research Network'
+      ],
+      trustScore: 93,
+      urgencyLevel: 'medium',
+      tags: ['Health', 'AI', 'Treatment', 'Global', 'Research'],
+      readingTime: 6,
+      verificationStatus: 'verified',
+      aiConfidence: 91
+    },
+    {
+      id: '5',
+      headline: 'Cybersecurity AI Prevents 2,847 Attacks in Last 60 Seconds',
+      timestamp: new Date(Date.now() - 240000).toISOString(),
+      source: 'Global Cyber Defense Network',
+      category: 'security',
+      summary: 'Advanced threat detection systems successfully identified and neutralized sophisticated cyber attacks targeting critical infrastructure across 23 countries in real-time.',
+      imageUrl: 'https://images.pexels.com/photos/60504/security-protection-anti-virus-software-60504.jpeg?auto=compress&cs=tinysrgb&w=800',
+      references: [
+        'International Cybersecurity Alliance',
+        'Critical Infrastructure Protection Agency',
+        'AI Threat Intelligence Network'
+      ],
+      trustScore: 95,
+      urgencyLevel: 'critical',
+      tags: ['Cybersecurity', 'AI', 'Real-time', 'Defense', 'Global'],
+      readingTime: 4,
+      verificationStatus: 'verified',
+      aiConfidence: 96
     }
   ];
 
@@ -98,26 +149,44 @@ const TodaysInsight: React.FC = () => {
     // Load initial insight
     loadRandomInsight();
     
-    // Auto-refresh every 4 hours
+    // Auto-refresh every 30 seconds for real-time feel
     const interval = setInterval(() => {
-      loadRandomInsight();
-    }, 4 * 60 * 60 * 1000);
+      if (autoRefreshEnabled) {
+        loadRandomInsight();
+      }
+    }, 30000);
 
     return () => clearInterval(interval);
-  }, []);
+  }, [autoRefreshEnabled]);
 
   const loadRandomInsight = () => {
     const randomInsight = mockInsights[Math.floor(Math.random() * mockInsights.length)];
-    setCurrentInsight(randomInsight);
+    // Update timestamp to current time for real-time feel
+    const updatedInsight = {
+      ...randomInsight,
+      timestamp: new Date().toISOString(),
+      id: Math.random().toString(36).substr(2, 9)
+    };
+    setCurrentInsight(updatedInsight);
     setLastRefresh(new Date());
   };
 
   const handleRefresh = async () => {
     setIsRefreshing(true);
-    // Simulate API call delay
-    await new Promise(resolve => setTimeout(resolve, 1500));
+    // Simulate real-time processing
+    await new Promise(resolve => setTimeout(resolve, 800));
     loadRandomInsight();
     setIsRefreshing(false);
+  };
+
+  const getTimeAgo = (timestamp: string) => {
+    const now = new Date();
+    const time = new Date(timestamp);
+    const diffInSeconds = Math.floor((now.getTime() - time.getTime()) / 1000);
+    
+    if (diffInSeconds < 60) return `${diffInSeconds}s ago`;
+    if (diffInSeconds < 3600) return `${Math.floor(diffInSeconds / 60)}m ago`;
+    return `${Math.floor(diffInSeconds / 3600)}h ago`;
   };
 
   const getCategoryIcon = (category: string) => {
@@ -125,9 +194,10 @@ const TodaysInsight: React.FC = () => {
       case 'climate': return Globe;
       case 'disaster': return AlertTriangle;
       case 'global-alert': return TrendingUp;
-      case 'technology': return Eye;
+      case 'technology': return Brain;
       case 'health': return FileText;
-      default: return Globe;
+      case 'security': return Eye;
+      default: return Zap;
     }
   };
 
@@ -138,16 +208,26 @@ const TodaysInsight: React.FC = () => {
       case 'global-alert': return 'from-yellow-500 to-orange-500';
       case 'technology': return 'from-blue-500 to-cyan-500';
       case 'health': return 'from-purple-500 to-pink-500';
+      case 'security': return 'from-red-600 to-pink-600';
       default: return 'from-slate-500 to-slate-600';
     }
   };
 
   const getUrgencyColor = (level: string) => {
     switch (level) {
-      case 'critical': return 'text-red-400 bg-red-500/10 border-red-500/20';
+      case 'critical': return 'text-red-400 bg-red-500/10 border-red-500/20 animate-pulse';
       case 'high': return 'text-orange-400 bg-orange-500/10 border-orange-500/20';
       case 'medium': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20';
       case 'low': return 'text-green-400 bg-green-500/10 border-green-500/20';
+      default: return 'text-slate-400 bg-slate-500/10 border-slate-500/20';
+    }
+  };
+
+  const getVerificationColor = (status: string) => {
+    switch (status) {
+      case 'verified': return 'text-green-400 bg-green-500/10 border-green-500/20';
+      case 'processing': return 'text-yellow-400 bg-yellow-500/10 border-yellow-500/20 animate-pulse';
+      case 'flagged': return 'text-red-400 bg-red-500/10 border-red-500/20';
       default: return 'text-slate-400 bg-slate-500/10 border-slate-500/20';
     }
   };
@@ -196,29 +276,49 @@ const TodaysInsight: React.FC = () => {
             <h2 className={`text-2xl font-bold font-display transition-colors ${
               isDark ? 'text-white' : 'text-slate-900'
             }`}>
-              Today's Insight
+              Live Intelligence
             </h2>
             <p className={`text-sm font-medium transition-colors ${
               isDark ? 'text-glow-purple' : 'text-purple-600'
             }`}>
-              Live Intelligence Update
+              Real-time Global Monitoring
             </p>
           </div>
         </div>
 
-        <motion.button
-          whileHover={{ scale: 1.05 }}
-          whileTap={{ scale: 0.95 }}
-          onClick={handleRefresh}
-          disabled={isRefreshing}
-          className={`p-3 rounded-2xl transition-all duration-300 ${
-            isDark
-              ? 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
-              : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
-          }`}
-        >
-          <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
-        </motion.button>
+        <div className="flex items-center space-x-2">
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={() => setAutoRefreshEnabled(!autoRefreshEnabled)}
+            className={`p-2 rounded-xl transition-all duration-300 ${
+              autoRefreshEnabled
+                ? isDark
+                  ? 'bg-green-500/20 border border-green-500/30 text-green-400'
+                  : 'bg-green-100 border border-green-200 text-green-600'
+                : isDark
+                  ? 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+                  : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
+            }`}
+            title={autoRefreshEnabled ? 'Auto-refresh ON' : 'Auto-refresh OFF'}
+          >
+            <Zap className={`w-4 h-4 ${autoRefreshEnabled ? 'animate-pulse' : ''}`} />
+          </motion.button>
+
+          <motion.button
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+            className={`p-3 rounded-2xl transition-all duration-300 ${
+              isDark
+                ? 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+                : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
+            }`}
+          >
+            <RefreshCw className={`w-5 h-5 ${isRefreshing ? 'animate-spin' : ''}`} />
+          </motion.button>
+        </div>
       </div>
 
       {/* Content */}
@@ -232,18 +332,22 @@ const TodaysInsight: React.FC = () => {
           </h3>
           
           {/* Meta Information */}
-          <div className="flex flex-wrap items-center gap-4 mb-4">
+          <div className="flex flex-wrap items-center gap-3 mb-4">
             <div className="flex items-center space-x-2">
               <Clock className="w-4 h-4 text-glow-purple" />
-              <span className={`text-sm transition-colors ${
+              <span className={`text-sm font-medium transition-colors ${
                 isDark ? 'text-slate-300' : 'text-slate-600'
               }`}>
-                {new Date(currentInsight.timestamp).toLocaleString()}
+                {getTimeAgo(currentInsight.timestamp)}
               </span>
             </div>
             
             <div className={`px-3 py-1 rounded-full text-sm font-semibold border ${getUrgencyColor(currentInsight.urgencyLevel)}`}>
               {currentInsight.urgencyLevel.toUpperCase()}
+            </div>
+            
+            <div className={`px-3 py-1 rounded-full text-sm font-semibold border ${getVerificationColor(currentInsight.verificationStatus)}`}>
+              {currentInsight.verificationStatus.toUpperCase()}
             </div>
             
             <div className={`px-3 py-1 rounded-full text-sm font-semibold ${
@@ -254,6 +358,10 @@ const TodaysInsight: React.FC = () => {
                   : 'bg-red-500/20 text-red-400 border border-red-500/30'
             }`}>
               {currentInsight.trustScore}% Trust
+            </div>
+
+            <div className="px-3 py-1 rounded-full text-sm font-semibold bg-blue-500/20 text-blue-400 border border-blue-500/30">
+              AI: {currentInsight.aiConfidence}%
             </div>
           </div>
         </div>
@@ -290,11 +398,11 @@ const TodaysInsight: React.FC = () => {
             : 'bg-purple-50 border-purple-200'
         }`}>
           <div className="flex items-center space-x-2 mb-3">
-            <Eye className="w-5 h-5 text-glow-purple" />
+            <Brain className="w-5 h-5 text-glow-purple" />
             <span className={`font-semibold transition-colors ${
               isDark ? 'text-white' : 'text-slate-900'
             }`}>
-              AI Analysis Summary
+              AI Real-time Analysis
             </span>
           </div>
           <p className={`leading-relaxed transition-colors ${
@@ -325,7 +433,7 @@ const TodaysInsight: React.FC = () => {
           <h4 className={`font-semibold mb-3 transition-colors ${
             isDark ? 'text-white' : 'text-slate-900'
           }`}>
-            References & Sources
+            Live Data Sources
           </h4>
           <div className="space-y-2">
             {currentInsight.references.map((reference, index) => (
@@ -335,7 +443,7 @@ const TodaysInsight: React.FC = () => {
                   isDark ? 'text-slate-300' : 'text-slate-600'
                 }`}
               >
-                <FileText className="w-4 h-4 text-glow-purple" />
+                <div className="w-2 h-2 bg-glow-purple rounded-full animate-pulse"></div>
                 <span>{reference}</span>
               </div>
             ))}
@@ -358,10 +466,16 @@ const TodaysInsight: React.FC = () => {
           </div>
           
           <div className="flex items-center space-x-2">
+            <div className="w-2 h-2 bg-green-400 rounded-full animate-pulse"></div>
+            <span className={`text-xs font-medium transition-colors ${
+              isDark ? 'text-green-400' : 'text-green-600'
+            }`}>
+              LIVE
+            </span>
             <span className={`text-xs transition-colors ${
               isDark ? 'text-slate-500' : 'text-slate-500'
             }`}>
-              Last updated: {lastRefresh.toLocaleTimeString()}
+              Updated: {lastRefresh.toLocaleTimeString()}
             </span>
           </div>
         </div>

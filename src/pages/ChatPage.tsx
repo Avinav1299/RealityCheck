@@ -5,7 +5,6 @@ import {
   Bot, 
   User, 
   Brain, 
-  Zap, 
   Settings,
   MessageSquare,
   Sparkles,
@@ -17,9 +16,18 @@ import {
   Volume2,
   VolumeX,
   History,
-  Trash2
+  Trash2,
+  AlertCircle,
+  CheckCircle,
+  XCircle,
+  Key,
+  ExternalLink,
+  Terminal
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useApiKeys } from '../contexts/ApiKeyContext';
+import { ollamaService } from '../services/ai/ollamaService';
+import { aiService } from '../services/ai/aiService';
 
 interface Message {
   id: string;
@@ -27,6 +35,8 @@ interface Message {
   content: string;
   timestamp: Date;
   model?: string;
+  provider?: string;
+  error?: boolean;
 }
 
 interface ChatSession {
@@ -37,57 +47,29 @@ interface ChatSession {
   lastUpdated: Date;
 }
 
-interface ModelConfig {
-  id: string;
-  name: string;
-  description: string;
-  icon: React.ComponentType<any>;
-  color: string;
-  capabilities: string[];
-}
-
 const ChatPage: React.FC = () => {
   const { isDark } = useTheme();
+  const { apiKeys, selectedModel, setSelectedModel, availableModels } = useApiKeys();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('gpt-4');
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(false);
+  const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [ollamaConnected, setOllamaConnected] = useState(false);
+  const [isCheckingConnection, setIsCheckingConnection] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  const models: ModelConfig[] = [
-    {
-      id: 'gpt-4',
-      name: 'GPT-4',
-      description: 'Advanced reasoning and analysis',
-      icon: Brain,
-      color: 'from-glow-purple to-glow-pink',
-      capabilities: ['Complex reasoning', 'Code generation', 'Creative writing', 'Analysis']
-    },
-    {
-      id: 'mistral',
-      name: 'Mistral',
-      description: 'Fast and efficient responses',
-      icon: Zap,
-      color: 'from-blue-500 to-cyan-500',
-      capabilities: ['Quick responses', 'Multilingual', 'Efficient processing', 'General tasks']
-    },
-    {
-      id: 'ollama',
-      name: 'Ollama',
-      description: 'Local model processing',
-      icon: Settings,
-      color: 'from-green-500 to-emerald-500',
-      capabilities: ['Privacy focused', 'Offline processing', 'Local inference', 'Custom models']
-    }
-  ];
-
+  // Fixed scroll behavior - use setTimeout to ensure DOM is updated
   useEffect(() => {
-    scrollToBottom();
+    const timer = setTimeout(() => {
+      scrollToBottom();
+    }, 100); // Small delay to ensure DOM is fully updated
+    
+    return () => clearTimeout(timer);
   }, [messages]);
 
   useEffect(() => {
@@ -119,7 +101,32 @@ const ChatPage: React.FC = () => {
     if (savedSessions) {
       setChatSessions(JSON.parse(savedSessions));
     }
+
+    // Skip Ollama connection check for now as requested
+    // checkOllamaConnection();
   }, []);
+
+  const checkOllamaConnection = async () => {
+    setIsCheckingConnection(true);
+    try {
+      const connection = await ollamaService.checkConnection();
+      setOllamaConnected(connection.connected);
+      if (!connection.connected) {
+        setConnectionError('Ollama not connected. Please start Ollama by running "ollama serve" in your terminal.');
+      } else {
+        setConnectionError(null);
+      }
+    } catch (error) {
+      setOllamaConnected(false);
+      if (error instanceof Error) {
+        setConnectionError(error.message);
+      } else {
+        setConnectionError('Failed to connect to Ollama. Please ensure it is running.');
+      }
+    } finally {
+      setIsCheckingConnection(false);
+    }
+  };
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -151,6 +158,22 @@ const ChatPage: React.FC = () => {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
+    const selectedModelData = availableModels.find(m => m.id === selectedModel);
+    
+    // Check if model requires API key and is available
+    if (selectedModelData?.requiresKey && !selectedModelData.isAvailable) {
+      setConnectionError(`${selectedModelData.provider} API key not configured. Please add your API key in settings.`);
+      return;
+    }
+
+    // Skip Ollama connection check for now as requested
+    // if (selectedModel.startsWith('ollama-') && !ollamaConnected) {
+    //   setConnectionError('Ollama not connected. Please start Ollama by running "ollama serve" in your terminal.');
+    //   return;
+    // }
+
+    setConnectionError(null);
+
     const userMessage: Message = {
       id: Date.now().toString(),
       type: 'user',
@@ -163,54 +186,55 @@ const ChatPage: React.FC = () => {
     setInputMessage('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      const response = await aiService.chat([
+        { role: 'system', content: 'You are a helpful AI assistant specialized in research, analysis, and providing accurate information.' },
+        ...newMessages.map(msg => ({
+          role: msg.type === 'user' ? 'user' as const : 'assistant' as const,
+          content: msg.content
+        }))
+      ], selectedModel, apiKeys);
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: generateMockResponse(inputMessage, selectedModel),
+        content: response.content,
         timestamp: new Date(),
-        model: selectedModel
+        model: response.model,
+        provider: response.provider,
+        error: false
       };
 
       const updatedMessages = [...newMessages, aiResponse];
       setMessages(updatedMessages);
-      setIsTyping(false);
 
       // Speak the response if enabled
-      speakMessage(aiResponse.content);
+      if (speechEnabled) {
+        speakMessage(aiResponse.content);
+      }
 
       // Save to current session
       if (currentSessionId) {
         updateCurrentSession(updatedMessages);
       }
-    }, 1500 + Math.random() * 2000);
-  };
+    } catch (error) {
+      console.error('AI response error:', error);
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
+        timestamp: new Date(),
+        model: selectedModel,
+        provider: selectedModelData?.provider || 'Unknown',
+        error: true
+      };
 
-  const generateMockResponse = (input: string, model: string): string => {
-    const responses = {
-      'gpt-4': [
-        "Based on my comprehensive analysis, this is a multifaceted topic that requires careful consideration of various interconnected factors. Let me break this down systematically for you...",
-        "I understand you're seeking insights on this complex matter. From a strategic analytical perspective, there are several key dimensions we should explore...",
-        "This is a fascinating question that intersects multiple domains of knowledge. Allow me to provide you with a thorough, evidence-based analysis..."
-      ],
-      'mistral': [
-        "Here's a focused analysis of your query. The key considerations include several important factors that I'll outline clearly...",
-        "I can help you with that efficiently. Based on current data patterns and established frameworks...",
-        "That's an excellent question. Let me provide you with a structured, actionable response that addresses your core concerns..."
-      ],
-      'ollama': [
-        "Processing your request using local inference capabilities. Based on my analysis of the available information...",
-        "Using privacy-focused local processing to analyze your query. The results indicate several important insights...",
-        "Local model analysis complete. Here are the key findings and recommendations based on your specific requirements..."
-      ]
-    };
-
-    const modelResponses = responses[model as keyof typeof responses] || responses['gpt-4'];
-    const baseResponse = modelResponses[Math.floor(Math.random() * modelResponses.length)];
-    
-    return baseResponse + " This demonstrates the advanced capabilities of " + models.find(m => m.id === model)?.name + 
-           " in providing detailed, contextual responses to complex research questions and analytical challenges.";
+      setMessages([...newMessages, errorMessage]);
+      setConnectionError(error instanceof Error ? error.message : 'Unknown error occurred');
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const createNewSession = () => {
@@ -226,6 +250,7 @@ const ChatPage: React.FC = () => {
     setChatSessions(updatedSessions);
     setCurrentSessionId(newSession.id);
     setMessages([]);
+    setConnectionError(null);
     localStorage.setItem('chatSessions', JSON.stringify(updatedSessions));
   };
 
@@ -234,6 +259,7 @@ const ChatPage: React.FC = () => {
     if (session) {
       setCurrentSessionId(sessionId);
       setMessages(session.messages);
+      setConnectionError(null);
     }
   };
 
@@ -258,6 +284,7 @@ const ChatPage: React.FC = () => {
     if (currentSessionId === sessionId) {
       setCurrentSessionId(null);
       setMessages([]);
+      setConnectionError(null);
     }
   };
 
@@ -265,7 +292,7 @@ const ChatPage: React.FC = () => {
     if (messages.length === 0) return;
 
     const chatContent = messages.map(msg => 
-      `**${msg.type === 'user' ? 'You' : models.find(m => m.id === msg.model)?.name || 'Assistant'}**: ${msg.content}\n\n`
+      `**${msg.type === 'user' ? 'You' : `AI (${msg.provider})`}**: ${msg.content}\n\n`
     ).join('');
 
     const blob = new Blob([chatContent], { type: 'text/markdown' });
@@ -283,10 +310,131 @@ const ChatPage: React.FC = () => {
 
   const clearChat = () => {
     setMessages([]);
+    setConnectionError(null);
     if (currentSessionId) {
       updateCurrentSession([]);
     }
   };
+
+  const getModelStatusIcon = () => {
+    const selectedModelData = availableModels.find(m => m.id === selectedModel);
+    
+    if (!selectedModelData) {
+      return <XCircle className="w-4 h-4 text-red-400" />;
+    }
+
+    if (selectedModelData.requiresKey && !selectedModelData.isAvailable) {
+      return <Key className="w-4 h-4 text-yellow-400" />;
+    }
+
+    // Skip Ollama connection check for now
+    // if (selectedModel.startsWith('ollama-') && !ollamaConnected) {
+    //   return <XCircle className="w-4 h-4 text-red-400" />;
+    // }
+
+    return <CheckCircle className="w-4 h-4 text-green-400" />;
+  };
+
+  const getModelStatusText = () => {
+    const selectedModelData = availableModels.find(m => m.id === selectedModel);
+    
+    if (!selectedModelData) {
+      return 'No Model Selected';
+    }
+
+    if (selectedModelData.requiresKey && !selectedModelData.isAvailable) {
+      return `${selectedModelData.name} (API Key Required)`;
+    }
+
+    // Skip Ollama connection check for now
+    // if (selectedModel.startsWith('ollama-') && !ollamaConnected) {
+    //   return `${selectedModelData.name} (Ollama Not Connected)`;
+    // }
+
+    return `${selectedModelData.name} (Ready)`;
+  };
+
+  const canSendMessage = () => {
+    if (!inputMessage.trim() || isTyping) return false;
+    
+    const selectedModelData = availableModels.find(m => m.id === selectedModel);
+    
+    if (!selectedModelData) return false;
+    
+    // For models requiring API keys, check if available
+    if (selectedModelData.requiresKey && !selectedModelData.isAvailable) {
+      return false;
+    }
+    
+    // Skip Ollama connection check for now
+    // if (selectedModel.startsWith('ollama-') && !ollamaConnected) {
+    //   return false;
+    // }
+    
+    return true;
+  };
+
+  const OllamaSetupGuide = () => (
+    <motion.div
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      className={`mt-4 p-6 rounded-2xl border ${
+        isDark
+          ? 'bg-blue-500/10 border-blue-500/20'
+          : 'bg-blue-50 border-blue-200'
+      }`}
+    >
+      <div className="flex items-start space-x-3">
+        <Terminal className="w-6 h-6 text-blue-400 mt-1" />
+        <div className="flex-1">
+          <h3 className={`font-semibold mb-2 ${isDark ? 'text-blue-300' : 'text-blue-700'}`}>
+            Ollama Setup Required
+          </h3>
+          <div className={`space-y-2 text-sm ${isDark ? 'text-blue-200' : 'text-blue-600'}`}>
+            <p>To use local AI models, please install and start Ollama:</p>
+            <div className={`bg-black/20 rounded-lg p-3 font-mono text-xs ${
+              isDark ? 'text-blue-100' : 'text-blue-800'
+            }`}>
+              <div># Install Ollama</div>
+              <div>curl -fsSL https://ollama.ai/install.sh | sh</div>
+              <div className="mt-2"># Start Ollama server</div>
+              <div>ollama serve</div>
+              <div className="mt-2"># Install a model</div>
+              <div>ollama pull llama2</div>
+            </div>
+            <div className="flex items-center space-x-2 mt-3">
+              <a
+                href="https://ollama.ai"
+                target="_blank"
+                rel="noopener noreferrer"
+                className={`inline-flex items-center space-x-1 px-3 py-1 rounded-lg transition-colors ${
+                  isDark
+                    ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                    : 'bg-blue-200 text-blue-700 hover:bg-blue-300'
+                }`}
+              >
+                <span>Download Ollama</span>
+                <ExternalLink className="w-3 h-3" />
+              </a>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={checkOllamaConnection}
+                disabled={isCheckingConnection}
+                className={`px-3 py-1 rounded-lg font-medium transition-all duration-300 ${
+                  isDark
+                    ? 'bg-blue-500/20 text-blue-300 hover:bg-blue-500/30'
+                    : 'bg-blue-200 text-blue-700 hover:bg-blue-300'
+                }`}
+              >
+                {isCheckingConnection ? 'Checking...' : 'Check Connection'}
+              </motion.button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </motion.div>
+  );
 
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-300 ${
@@ -306,7 +454,7 @@ const ChatPage: React.FC = () => {
                 : 'bg-slate-100 border-slate-200 text-purple-700'
             }`}>
               <Sparkles className="w-5 h-5" />
-              <span className="font-semibold">Advanced AI Consultation</span>
+              <span className="font-semibold">Multi-Model AI Chat</span>
             </div>
             
             <h1 className={`text-5xl font-bold font-display mb-2 transition-colors ${
@@ -317,8 +465,59 @@ const ChatPage: React.FC = () => {
             <p className={`text-lg font-body transition-colors ${
               isDark ? 'text-slate-300' : 'text-slate-600'
             }`}>
-              Engage with advanced AI models for research, analysis, and strategic guidance
+              Chat with multiple AI models including local Ollama and cloud providers
             </p>
+
+            {/* Model Status */}
+            <div className="mt-4">
+              <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full ${
+                isDark
+                  ? 'bg-white/5 border border-white/10'
+                  : 'bg-slate-50 border border-slate-200'
+              }`}>
+                {getModelStatusIcon()}
+                <span className={`font-medium text-sm transition-colors ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}>
+                  {getModelStatusText()}
+                </span>
+              </div>
+            </div>
+
+            {connectionError && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`mt-4 p-4 rounded-2xl border ${
+                  isDark
+                    ? 'bg-red-500/10 border-red-500/20'
+                    : 'bg-red-50 border-red-200'
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-3">
+                  <AlertCircle className="w-5 h-5 text-red-400" />
+                  <span className={`font-medium ${isDark ? 'text-red-300' : 'text-red-700'}`}>
+                    {connectionError}
+                  </span>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={checkOllamaConnection}
+                    disabled={isCheckingConnection}
+                    className={`px-4 py-2 rounded-xl font-semibold transition-all duration-300 ${
+                      isDark
+                        ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
+                        : 'bg-red-200 text-red-700 hover:bg-red-300'
+                    }`}
+                  >
+                    {isCheckingConnection ? 'Checking...' : 'Retry'}
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
+
+            {/* Show Ollama setup guide if not connected - commented out for now */}
+            {/* {selectedModel.startsWith('ollama-') && !ollamaConnected && <OllamaSetupGuide />} */}
           </motion.div>
         </div>
       </div>
@@ -345,58 +544,52 @@ const ChatPage: React.FC = () => {
               </h2>
               
               <div className="space-y-3">
-                {models.map((model) => {
-                  const Icon = model.icon;
-                  const isSelected = selectedModel === model.id;
-                  
-                  return (
-                    <motion.button
-                      key={model.id}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setSelectedModel(model.id)}
-                      className={`w-full p-4 rounded-2xl border transition-all duration-300 text-left ${
-                        isSelected
-                          ? isDark
-                            ? 'bg-glow-purple/20 border-glow-purple/50 shadow-glow-sm'
-                            : 'bg-purple-100 border-purple-300 shadow-lg shadow-purple-500/10'
-                          : isDark
-                            ? 'bg-white/5 border-white/10 hover:bg-white/10'
-                            : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className={`p-2 rounded-xl bg-gradient-to-r ${model.color}`}>
-                          <Icon className="w-5 h-5 text-white" />
-                        </div>
-                        <span className={`font-semibold transition-colors ${
-                          isDark ? 'text-white' : 'text-slate-900'
+                {availableModels.map((model) => (
+                  <motion.button
+                    key={model.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setSelectedModel(model.id)}
+                    className={`w-full p-3 rounded-xl border transition-all duration-300 text-left ${
+                      selectedModel === model.id
+                        ? isDark
+                          ? 'bg-glow-purple/20 border-glow-purple/50 text-white'
+                          : 'bg-purple-100 border-purple-300 text-purple-900'
+                        : isDark
+                          ? 'bg-white/5 border-white/10 text-white hover:bg-white/10'
+                          : 'bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="font-semibold">{model.name}</div>
+                        <div className={`text-xs ${
+                          selectedModel === model.id
+                            ? isDark ? 'text-purple-300' : 'text-purple-700'
+                            : isDark ? 'text-slate-400' : 'text-slate-600'
                         }`}>
-                          {model.name}
-                        </span>
+                          {model.provider}
+                        </div>
+                        <div className={`text-xs mt-1 ${
+                          selectedModel === model.id
+                            ? isDark ? 'text-purple-200' : 'text-purple-600'
+                            : isDark ? 'text-slate-500' : 'text-slate-500'
+                        }`}>
+                          {model.description}
+                        </div>
                       </div>
-                      <p className={`text-sm mb-2 transition-colors ${
-                        isDark ? 'text-slate-300' : 'text-slate-600'
-                      }`}>
-                        {model.description}
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {model.capabilities.slice(0, 2).map((capability) => (
-                          <span
-                            key={capability}
-                            className={`text-xs px-2 py-1 rounded-full ${
-                              isDark
-                                ? 'bg-white/10 text-slate-400'
-                                : 'bg-slate-200 text-slate-600'
-                            }`}
-                          >
-                            {capability}
-                          </span>
-                        ))}
+                      <div className="ml-2">
+                        {model.requiresKey && !model.isAvailable ? (
+                          <Key className="w-4 h-4 text-yellow-400" />
+                        ) : model.isAvailable ? (
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-red-400" />
+                        )}
                       </div>
-                    </motion.button>
-                  );
-                })}
+                    </div>
+                  </motion.button>
+                ))}
               </div>
             </div>
 
@@ -485,19 +678,19 @@ const ChatPage: React.FC = () => {
               {/* Chat Header */}
               <div className="p-6 border-b border-white/10 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-xl bg-gradient-to-r ${models.find(m => m.id === selectedModel)?.color}`}>
-                    {React.createElement(models.find(m => m.id === selectedModel)?.icon || Brain, { className: "w-5 h-5 text-white" })}
+                  <div className={`p-2 rounded-xl bg-gradient-to-r from-glow-purple to-glow-pink`}>
+                    <Brain className="w-5 h-5 text-white" />
                   </div>
                   <div>
                     <h3 className={`font-semibold transition-colors ${
                       isDark ? 'text-white' : 'text-slate-900'
                     }`}>
-                      {models.find(m => m.id === selectedModel)?.name}
+                      {availableModels.find(m => m.id === selectedModel)?.name || 'No Model Selected'}
                     </h3>
                     <p className={`text-sm transition-colors ${
                       isDark ? 'text-slate-400' : 'text-slate-600'
                     }`}>
-                      {models.find(m => m.id === selectedModel)?.description}
+                      {availableModels.find(m => m.id === selectedModel)?.provider || 'Unknown Provider'}
                     </p>
                   </div>
                 </div>
@@ -568,7 +761,7 @@ const ChatPage: React.FC = () => {
                       <p className={`transition-colors ${
                         isDark ? 'text-slate-400' : 'text-slate-600'
                       }`}>
-                        Ask questions, seek insights, or discuss research topics
+                        Ask questions, seek insights, or discuss research topics with AI models
                       </p>
                     </div>
                   </div>
@@ -587,12 +780,18 @@ const ChatPage: React.FC = () => {
                           <div className={`p-2 rounded-xl ${
                             message.type === 'user'
                               ? 'bg-gradient-to-r from-glow-purple to-glow-pink'
-                              : isDark
-                                ? 'bg-slate-700'
-                                : 'bg-slate-200'
+                              : message.error
+                                ? isDark
+                                  ? 'bg-red-500/20'
+                                  : 'bg-red-100'
+                                : isDark
+                                  ? 'bg-slate-700'
+                                  : 'bg-slate-200'
                           }`}>
                             {message.type === 'user' ? (
                               <User className="w-5 h-5 text-white" />
+                            ) : message.error ? (
+                              <AlertCircle className={`w-5 h-5 ${isDark ? 'text-red-400' : 'text-red-600'}`} />
                             ) : (
                               <Bot className={`w-5 h-5 ${isDark ? 'text-slate-300' : 'text-slate-600'}`} />
                             )}
@@ -603,9 +802,13 @@ const ChatPage: React.FC = () => {
                               ? isDark
                                 ? 'bg-glow-purple/20 border-glow-purple/30'
                                 : 'bg-purple-100 border-purple-200'
-                              : isDark
-                                ? 'bg-white/5 border-white/10'
-                                : 'bg-slate-50 border-slate-200'
+                              : message.error
+                                ? isDark
+                                  ? 'bg-red-500/10 border-red-500/20'
+                                  : 'bg-red-50 border-red-200'
+                                : isDark
+                                  ? 'bg-white/5 border-white/10'
+                                  : 'bg-slate-50 border-slate-200'
                           }`}>
                             <p className={`transition-colors leading-relaxed ${
                               isDark ? 'text-white' : 'text-slate-900'
@@ -613,12 +816,12 @@ const ChatPage: React.FC = () => {
                               {message.content}
                             </p>
                             
-                            {message.model && (
+                            {(message.model || message.provider) && (
                               <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
                                 <span className={`text-xs font-medium transition-colors ${
                                   isDark ? 'text-slate-400' : 'text-slate-600'
                                 }`}>
-                                  {models.find(m => m.id === message.model)?.name}
+                                  {message.provider} - {message.model}
                                 </span>
                                 <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <button
@@ -629,7 +832,7 @@ const ChatPage: React.FC = () => {
                                   >
                                     <Copy className="w-4 h-4" />
                                   </button>
-                                  {speechEnabled && (
+                                  {speechEnabled && !message.error && (
                                     <button
                                       onClick={() => speakMessage(message.content)}
                                       className={`p-1 rounded transition-all duration-200 ${
@@ -686,7 +889,7 @@ const ChatPage: React.FC = () => {
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder="Ask the AI anything..."
+                    placeholder="Ask your AI assistant anything..."
                     className={`flex-1 p-4 rounded-2xl backdrop-blur-sm border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-glow-purple ${
                       isDark
                         ? 'bg-white/5 border-white/10 text-white placeholder-slate-400'
@@ -715,7 +918,7 @@ const ChatPage: React.FC = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleSendMessage}
-                    disabled={!inputMessage.trim() || isTyping}
+                    disabled={!canSendMessage()}
                     className="bg-gradient-to-r from-glow-purple to-glow-pink text-white p-4 rounded-2xl shadow-glow hover:shadow-glow-lg transition-all duration-300 disabled:opacity-50"
                   >
                     <Send className="w-5 h-5" />

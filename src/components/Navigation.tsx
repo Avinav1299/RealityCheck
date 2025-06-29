@@ -1,20 +1,25 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, Sun, Moon, TrendingUp, Brain, Zap, Compass, Upload } from 'lucide-react';
+import { Shield, Sun, Moon, TrendingUp, Brain, Zap, Compass, Settings, Key } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useApiKeys } from '../contexts/ApiKeyContext';
 
 const Navigation: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
+  const { hasValidKey } = useApiKeys();
   const location = useLocation();
 
   const navItems = [
     { path: '/discover', name: 'Discover', icon: Compass },
+    { path: '/trending', name: 'Trending', icon: TrendingUp },
     { path: '/global-pulse', name: 'Global Pulse', icon: TrendingUp },
-    { path: '/research', name: 'Research', icon: Upload },
     { path: '/insight-engine', name: 'Insight Engine', icon: Brain },
     { path: '/chat', name: 'Chat', icon: Zap },
   ];
+
+  // Check if any API keys are configured
+  const hasAnyApiKey = hasValidKey('openai') || hasValidKey('claude') || hasValidKey('mistral') || hasValidKey('cohere');
 
   return (
     <motion.nav
@@ -49,7 +54,7 @@ const Navigation: React.FC = () => {
               <p className={`text-sm font-medium transition-colors ${
                 isDark ? 'text-glow-purple' : 'text-purple-600'
               }`}>
-                Advanced Intelligence Platform
+                Multi-Model Intelligence
               </p>
             </div>
           </Link>
@@ -83,19 +88,61 @@ const Navigation: React.FC = () => {
             })}
           </div>
 
-          {/* Theme Toggle */}
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={toggleTheme}
-            className={`p-3 rounded-xl transition-all duration-300 ${
-              isDark
-                ? 'bg-slate-800/50 text-yellow-400 hover:bg-slate-700/50 shadow-lg shadow-slate-900/20'
-                : 'bg-slate-100 text-slate-600 hover:bg-slate-200 shadow-lg shadow-slate-500/10'
-            }`}
-          >
-            {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
-          </motion.button>
+          {/* Controls */}
+          <div className="flex items-center space-x-3">
+            {/* API Key Status Indicator */}
+            <Link to="/settings">
+              <motion.div
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`p-2 rounded-xl transition-all duration-300 ${
+                  hasAnyApiKey
+                    ? isDark
+                      ? 'bg-green-500/20 text-green-400 hover:bg-green-500/30'
+                      : 'bg-green-100 text-green-600 hover:bg-green-200'
+                    : isDark
+                      ? 'bg-yellow-500/20 text-yellow-400 hover:bg-yellow-500/30'
+                      : 'bg-yellow-100 text-yellow-600 hover:bg-yellow-200'
+                }`}
+                title={hasAnyApiKey ? 'API Keys Configured' : 'Configure API Keys'}
+              >
+                <Key className="w-4 h-4" />
+              </motion.div>
+            </Link>
+
+            {/* Settings Button */}
+            <Link to="/settings">
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                className={`p-3 rounded-xl transition-all duration-300 ${
+                  location.pathname === '/settings'
+                    ? isDark
+                      ? 'bg-glow-purple/20 text-glow-purple'
+                      : 'bg-purple-100 text-purple-700'
+                    : isDark
+                      ? 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
+                      : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                }`}
+              >
+                <Settings className="w-5 h-5" />
+              </motion.button>
+            </Link>
+
+            {/* Theme Toggle */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={toggleTheme}
+              className={`p-3 rounded-xl transition-all duration-300 ${
+                isDark
+                  ? 'bg-slate-800/50 text-yellow-400 hover:bg-slate-700/50 shadow-lg shadow-slate-900/20'
+                  : 'bg-slate-100 text-slate-600 hover:bg-slate-200 shadow-lg shadow-slate-500/10'
+              }`}
+            >
+              {isDark ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
+            </motion.button>
+          </div>
         </div>
       </div>
     </motion.nav>
