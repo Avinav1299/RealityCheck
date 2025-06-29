@@ -43,26 +43,36 @@ interface ApiKeyProviderProps {
 }
 
 const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
+  // Initialize with environment variables first
   const [apiKeys, setApiKeys] = useState<ApiKeys>({
-    openai: '',
-    claude: '',
-    mistral: '',
-    cohere: '',
-    ollama: 'http://localhost:11434',
-    newsapi: '',
-    bing: '',
-    google: ''
+    openai: import.meta.env.VITE_OPENAI_API_KEY || '',
+    claude: import.meta.env.VITE_CLAUDE_API_KEY || '',
+    mistral: import.meta.env.VITE_MISTRAL_API_KEY || '',
+    cohere: import.meta.env.VITE_COHERE_API_KEY || '',
+    ollama: import.meta.env.VITE_OLLAMA_BASE_URL || 'http://localhost:11434',
+    newsapi: import.meta.env.VITE_NEWSAPI_KEY || '',
+    bing: import.meta.env.VITE_BING_IMAGE_API_KEY || '',
+    google: import.meta.env.VITE_GOOGLE_API_KEY || ''
   });
 
-  const [selectedModel, setSelectedModel] = useState('ollama-llama2');
+  const [selectedModel, setSelectedModel] = useState('claude-3-haiku');
 
-  // Load API keys from localStorage on mount
+  // Load API keys from localStorage on mount and merge with environment variables
   useEffect(() => {
     const savedKeys = localStorage.getItem('realitycheck_api_keys');
     if (savedKeys) {
       try {
         const parsed = JSON.parse(savedKeys);
-        setApiKeys(prev => ({ ...prev, ...parsed }));
+        // Merge saved keys with environment variables, prioritizing saved keys
+        setApiKeys(prev => {
+          const merged = { ...prev };
+          Object.keys(parsed).forEach(key => {
+            if (parsed[key] && parsed[key].trim() !== '') {
+              merged[key as keyof ApiKeys] = parsed[key];
+            }
+          });
+          return merged;
+        });
       } catch (error) {
         console.error('Error loading saved API keys:', error);
       }
@@ -76,7 +86,14 @@ const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
 
   // Save API keys to localStorage when they change
   useEffect(() => {
-    localStorage.setItem('realitycheck_api_keys', JSON.stringify(apiKeys));
+    // Only save non-empty keys to localStorage
+    const keysToSave: Partial<ApiKeys> = {};
+    Object.entries(apiKeys).forEach(([key, value]) => {
+      if (value && value.trim() !== '') {
+        keysToSave[key as keyof ApiKeys] = value;
+      }
+    });
+    localStorage.setItem('realitycheck_api_keys', JSON.stringify(keysToSave));
   }, [apiKeys]);
 
   // Save selected model to localStorage
@@ -93,7 +110,11 @@ const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
 
   const getActiveKey = (service: keyof ApiKeys): string | null => {
     const key = apiKeys[service];
-    if (!key || key === 'demo-key' || key === '') return null;
+    if (!key || key === 'demo-key' || key.trim() === '' || 
+        key === 'your_openai_api_key' || key === 'your_claude_api_key' ||
+        key === 'your_mistral_api_key' || key === 'your_cohere_api_key' ||
+        key === 'your_newsapi_key' || key === 'your_bing_image_search_api_key' ||
+        key === 'your_google_api_key') return null;
     return key;
   };
 

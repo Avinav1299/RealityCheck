@@ -2,22 +2,23 @@ import { supabase } from '../lib/supabase';
 import { detectImageManipulation } from './detectImageManipulation';
 import { verifyTextClaim } from './verifyTextClaim';
 import { summarizeAndStrategize } from './summarizeAndStrategize';
-import { fetchArticles as fetchNewsArticles } from '../services/api/news.js';
+import { fetchRealWorldArticles } from '../services/api/realWorldScraper.js';
 
 export async function fetchArticles(sector: string = 'general') {
   try {
-    console.log(`🔄 Fetching enhanced real-time articles for sector: ${sector}`);
+    console.log(`🔄 Fetching real-world articles for sector: ${sector}`);
     
     let articlesData;
     
     try {
-      // Use enhanced news service
-      articlesData = await fetchNewsArticles(sector, 20);
-      console.log(`✅ Fetched ${articlesData.articles.length} articles from ${articlesData.source}`);
+      // Use real-world RSS scraper
+      articlesData = await fetchRealWorldArticles(sector, 20);
+      console.log(`✅ Fetched ${articlesData.articles.length} real articles from ${articlesData.source}`);
     } catch (error) {
-      console.warn('📡 News service unavailable, using enhanced mock data:', error);
-      // Fallback handled by news service
-      articlesData = await fetchNewsArticles(sector, 20);
+      console.warn('📡 Real-world scraping failed, using fallback:', error);
+      // Fallback to existing news service
+      const { fetchArticles: fallbackFetch } = await import('../services/api/news.js');
+      articlesData = await fallbackFetch(sector, 20);
     }
 
     const articles = articlesData.articles;
@@ -58,7 +59,7 @@ export async function fetchArticles(sector: string = 'general') {
 
         // Process verification checks asynchronously for real-time feel
         Promise.all([
-          article.urlToImage ? processEnhancedImageCheck(insertedArticle.id, article.urlToImage) : null,
+          article.urlToImage ? processRealImageCheck(insertedArticle.id, article.urlToImage) : null,
           processEnhancedTextVerification(insertedArticle.id, article.title + ' ' + article.description)
         ]).catch(error => console.warn('⚠️ Background processing error:', error));
 
@@ -68,36 +69,37 @@ export async function fetchArticles(sector: string = 'general') {
       }
     }
 
-    console.log(`✅ Successfully processed ${processedCount}/${articles.length} articles`);
+    console.log(`✅ Successfully processed ${processedCount}/${articles.length} real-world articles`);
     return articles;
 
   } catch (error) {
     console.error('❌ Error in fetchArticles:', error);
-    // Return enhanced mock data as fallback
+    // Return fallback mock data
     const { fetchArticles: mockFetch } = await import('../services/api/news.js');
     const fallbackData = await mockFetch(sector, 20);
     return fallbackData.articles;
   }
 }
 
-async function processEnhancedImageCheck(articleId: string, imageUrl: string) {
+async function processRealImageCheck(articleId: string, imageUrl: string) {
   try {
-    console.log('🖼️ Processing enhanced image verification...');
-    const result = await detectImageManipulation(imageUrl);
+    console.log('🖼️ Processing real-world image verification...');
+    const { verifyImageAuthenticity } = await import('../services/api/realImageVerification.js');
+    const result = await verifyImageAuthenticity(imageUrl);
     
     await supabase.from('image_checks').insert({
       article_id: articleId,
       image_url: imageUrl,
       match_count: result.matchCount || 0,
-      earliest_date: result.earliestDate,
-      context_urls: result.contextUrls || [],
+      earliest_date: result.earliestMatch,
+      context_urls: result.sources || [],
       confidence_score: Math.floor(result.confidence || 85),
       status: result.status || 'verified'
     });
     
-    console.log('✅ Enhanced image verification completed');
+    console.log('✅ Real-world image verification completed');
   } catch (error) {
-    console.error('❌ Error processing enhanced image check:', error);
+    console.error('❌ Error processing real image check:', error);
   }
 }
 

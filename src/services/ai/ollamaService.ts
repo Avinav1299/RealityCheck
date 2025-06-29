@@ -83,7 +83,7 @@ class OllamaService {
         if (error.name === 'AbortError') {
           throw new Error('Ollama connection timeout. Please ensure Ollama is running and accessible.');
         }
-        if (error.message.includes('Failed to fetch')) {
+        if (error instanceof TypeError || error.message === 'Failed to fetch') {
           throw new Error('Cannot connect to Ollama. Please ensure:\n1. Ollama is installed and running (run "ollama serve")\n2. Ollama is accessible at ' + this.baseUrl + '\n3. No firewall is blocking the connection');
         }
         if (error.message.includes('CORS')) {
@@ -172,7 +172,7 @@ class OllamaService {
         if (error.name === 'AbortError') {
           throw new Error('Ollama request timeout. The model may be taking too long to respond.');
         }
-        if (error.message.includes('Failed to fetch')) {
+        if (error instanceof TypeError || error.message === 'Failed to fetch') {
           throw new Error('Lost connection to Ollama. Please ensure Ollama is still running.');
         }
       }

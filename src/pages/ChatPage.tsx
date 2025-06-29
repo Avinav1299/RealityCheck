@@ -63,14 +63,22 @@ const ChatPage: React.FC = () => {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Fixed scroll behavior - use setTimeout to ensure DOM is updated
+  // Filter available models to only show those with API keys configured or Ollama models
+  const usableModels = availableModels.filter(model => 
+    model.isAvailable || model.provider === 'Ollama'
+  );
+
+  // Improved scroll behavior - immediate scroll without delay
   useEffect(() => {
-    const timer = setTimeout(() => {
-      scrollToBottom();
-    }, 100); // Small delay to ensure DOM is fully updated
+    const scrollToBottom = () => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    };
+    
+    // Use setTimeout with 0 delay to ensure DOM is updated
+    const timer = setTimeout(scrollToBottom, 0);
     
     return () => clearTimeout(timer);
-  }, [messages]);
+  }, [messages, isTyping]); // Also trigger on isTyping changes
 
   useEffect(() => {
     // Initialize speech recognition
@@ -158,7 +166,7 @@ const ChatPage: React.FC = () => {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
-    const selectedModelData = availableModels.find(m => m.id === selectedModel);
+    const selectedModelData = usableModels.find(m => m.id === selectedModel);
     
     // Check if model requires API key and is available
     if (selectedModelData?.requiresKey && !selectedModelData.isAvailable) {
@@ -317,7 +325,7 @@ const ChatPage: React.FC = () => {
   };
 
   const getModelStatusIcon = () => {
-    const selectedModelData = availableModels.find(m => m.id === selectedModel);
+    const selectedModelData = usableModels.find(m => m.id === selectedModel);
     
     if (!selectedModelData) {
       return <XCircle className="w-4 h-4 text-red-400" />;
@@ -336,7 +344,7 @@ const ChatPage: React.FC = () => {
   };
 
   const getModelStatusText = () => {
-    const selectedModelData = availableModels.find(m => m.id === selectedModel);
+    const selectedModelData = usableModels.find(m => m.id === selectedModel);
     
     if (!selectedModelData) {
       return 'No Model Selected';
@@ -357,7 +365,7 @@ const ChatPage: React.FC = () => {
   const canSendMessage = () => {
     if (!inputMessage.trim() || isTyping) return false;
     
-    const selectedModelData = availableModels.find(m => m.id === selectedModel);
+    const selectedModelData = usableModels.find(m => m.id === selectedModel);
     
     if (!selectedModelData) return false;
     
@@ -531,7 +539,7 @@ const ChatPage: React.FC = () => {
             animate={{ opacity: 1, x: 0 }}
             className="w-80 flex flex-col"
           >
-            {/* Model Selection */}
+            {/* Model Selection - Only show usable models */}
             <div className={`backdrop-blur-sm border rounded-3xl p-6 shadow-xl mb-6 ${
               isDark
                 ? 'bg-white/5 border-white/10'
@@ -543,54 +551,66 @@ const ChatPage: React.FC = () => {
                 AI Models
               </h2>
               
-              <div className="space-y-3">
-                {availableModels.map((model) => (
-                  <motion.button
-                    key={model.id}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => setSelectedModel(model.id)}
-                    className={`w-full p-3 rounded-xl border transition-all duration-300 text-left ${
-                      selectedModel === model.id
-                        ? isDark
-                          ? 'bg-glow-purple/20 border-glow-purple/50 text-white'
-                          : 'bg-purple-100 border-purple-300 text-purple-900'
-                        : isDark
-                          ? 'bg-white/5 border-white/10 text-white hover:bg-white/10'
-                          : 'bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100'
-                    }`}
-                  >
-                    <div className="flex items-center justify-between">
-                      <div className="flex-1">
-                        <div className="font-semibold">{model.name}</div>
-                        <div className={`text-xs ${
-                          selectedModel === model.id
-                            ? isDark ? 'text-purple-300' : 'text-purple-700'
-                            : isDark ? 'text-slate-400' : 'text-slate-600'
-                        }`}>
-                          {model.provider}
+              {usableModels.length === 0 ? (
+                <div className={`text-center p-4 rounded-xl border ${
+                  isDark
+                    ? 'bg-yellow-500/10 border-yellow-500/20 text-yellow-300'
+                    : 'bg-yellow-50 border-yellow-200 text-yellow-700'
+                }`}>
+                  <Key className="w-8 h-8 mx-auto mb-2" />
+                  <p className="font-medium">No Models Available</p>
+                  <p className="text-sm mt-1">Please configure API keys in Settings</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {usableModels.map((model) => (
+                    <motion.button
+                      key={model.id}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setSelectedModel(model.id)}
+                      className={`w-full p-3 rounded-xl border transition-all duration-300 text-left ${
+                        selectedModel === model.id
+                          ? isDark
+                            ? 'bg-glow-purple/20 border-glow-purple/50 text-white'
+                            : 'bg-purple-100 border-purple-300 text-purple-900'
+                          : isDark
+                            ? 'bg-white/5 border-white/10 text-white hover:bg-white/10'
+                            : 'bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="flex items-center justify-between">
+                        <div className="flex-1">
+                          <div className="font-semibold">{model.name}</div>
+                          <div className={`text-xs ${
+                            selectedModel === model.id
+                              ? isDark ? 'text-purple-300' : 'text-purple-700'
+                              : isDark ? 'text-slate-400' : 'text-slate-600'
+                          }`}>
+                            {model.provider}
+                          </div>
+                          <div className={`text-xs mt-1 ${
+                            selectedModel === model.id
+                              ? isDark ? 'text-purple-200' : 'text-purple-600'
+                              : isDark ? 'text-slate-500' : 'text-slate-500'
+                          }`}>
+                            {model.description}
+                          </div>
                         </div>
-                        <div className={`text-xs mt-1 ${
-                          selectedModel === model.id
-                            ? isDark ? 'text-purple-200' : 'text-purple-600'
-                            : isDark ? 'text-slate-500' : 'text-slate-500'
-                        }`}>
-                          {model.description}
+                        <div className="ml-2">
+                          {model.requiresKey && !model.isAvailable ? (
+                            <Key className="w-4 h-4 text-yellow-400" />
+                          ) : model.isAvailable || model.provider === 'Ollama' ? (
+                            <CheckCircle className="w-4 h-4 text-green-400" />
+                          ) : (
+                            <XCircle className="w-4 h-4 text-red-400" />
+                          )}
                         </div>
                       </div>
-                      <div className="ml-2">
-                        {model.requiresKey && !model.isAvailable ? (
-                          <Key className="w-4 h-4 text-yellow-400" />
-                        ) : model.isAvailable ? (
-                          <CheckCircle className="w-4 h-4 text-green-400" />
-                        ) : (
-                          <XCircle className="w-4 h-4 text-red-400" />
-                        )}
-                      </div>
-                    </div>
-                  </motion.button>
-                ))}
-              </div>
+                    </motion.button>
+                  ))}
+                </div>
+              )}
             </div>
 
             {/* Chat Sessions */}
@@ -685,12 +705,12 @@ const ChatPage: React.FC = () => {
                     <h3 className={`font-semibold transition-colors ${
                       isDark ? 'text-white' : 'text-slate-900'
                     }`}>
-                      {availableModels.find(m => m.id === selectedModel)?.name || 'No Model Selected'}
+                      {usableModels.find(m => m.id === selectedModel)?.name || 'No Model Selected'}
                     </h3>
                     <p className={`text-sm transition-colors ${
                       isDark ? 'text-slate-400' : 'text-slate-600'
                     }`}>
-                      {availableModels.find(m => m.id === selectedModel)?.provider || 'Unknown Provider'}
+                      {usableModels.find(m => m.id === selectedModel)?.provider || 'Unknown Provider'}
                     </p>
                   </div>
                 </div>

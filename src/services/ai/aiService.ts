@@ -83,32 +83,47 @@ class AIService {
       throw new Error('OpenAI API key not configured');
     }
 
-    const response = await fetch('https://api.openai.com/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
+    try {
+      const response = await fetch('https://api.openai.com/v1/chat/completions', {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: 0.7,
+          max_tokens: 2000
+        })
+      });
+
+      if (!response.ok) {
+        let errorMessage = `OpenAI API error: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error?.message || errorMessage;
+        } catch (e) {
+          // If we can't parse the error response, use the status message
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      
+      return {
+        content: data.choices[0]?.message?.content || 'No response generated',
         model,
-        messages,
-        temperature: 0.7,
-        max_tokens: 2000
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`OpenAI API error: ${response.status}`);
+        provider: 'OpenAI',
+        usage: data.usage
+      };
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Network error: Unable to connect to OpenAI API. Please check your internet connection.');
+      }
+      throw error;
     }
-
-    const data = await response.json();
-    
-    return {
-      content: data.choices[0]?.message?.content || 'No response generated',
-      model,
-      provider: 'OpenAI',
-      usage: data.usage
-    };
   }
 
   /**
@@ -123,33 +138,48 @@ class AIService {
     const systemMessage = messages.find(m => m.role === 'system')?.content || '';
     const conversationMessages = messages.filter(m => m.role !== 'system');
 
-    const response = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'x-api-key': apiKey,
-        'Content-Type': 'application/json',
-        'anthropic-version': '2023-06-01'
-      },
-      body: JSON.stringify({
+    try {
+      const response = await fetch('https://api.anthropic.com/v1/messages', {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'x-api-key': apiKey,
+          'Content-Type': 'application/json',
+          'anthropic-version': '2023-06-01'
+        },
+        body: JSON.stringify({
+          model,
+          max_tokens: 2000,
+          system: systemMessage,
+          messages: conversationMessages
+        })
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Claude API error: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error?.message || errorMessage;
+        } catch (e) {
+          // If we can't parse the error response, use the status message
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      
+      return {
+        content: data.content[0]?.text || 'No response generated',
         model,
-        max_tokens: 2000,
-        system: systemMessage,
-        messages: conversationMessages
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Claude API error: ${response.status}`);
+        provider: 'Anthropic',
+        usage: data.usage
+      };
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Network error: Unable to connect to Claude API. Please check your internet connection.');
+      }
+      throw error;
     }
-
-    const data = await response.json();
-    
-    return {
-      content: data.content[0]?.text || 'No response generated',
-      model,
-      provider: 'Anthropic',
-      usage: data.usage
-    };
   }
 
   /**
@@ -160,32 +190,47 @@ class AIService {
       throw new Error('Mistral API key not configured');
     }
 
-    const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
+    try {
+      const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model,
+          messages,
+          temperature: 0.7,
+          max_tokens: 2000
+        })
+      });
+
+      if (!response.ok) {
+        let errorMessage = `Mistral API error: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.error?.message || errorMessage;
+        } catch (e) {
+          // If we can't parse the error response, use the status message
+        }
+        throw new Error(errorMessage);
+      }
+
+      const data = await response.json();
+      
+      return {
+        content: data.choices[0]?.message?.content || 'No response generated',
         model,
-        messages,
-        temperature: 0.7,
-        max_tokens: 2000
-      })
-    });
-
-    if (!response.ok) {
-      throw new Error(`Mistral API error: ${response.status}`);
+        provider: 'Mistral AI',
+        usage: data.usage
+      };
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Network error: Unable to connect to Mistral API. Please check your internet connection.');
+      }
+      throw error;
     }
-
-    const data = await response.json();
-    
-    return {
-      content: data.choices[0]?.message?.content || 'No response generated',
-      model,
-      provider: 'Mistral AI',
-      usage: data.usage
-    };
   }
 
   /**
@@ -203,37 +248,52 @@ class AIService {
       message: msg.content
     }));
 
-    const response = await fetch('https://api.cohere.ai/v1/chat', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${apiKey}`,
-        'Content-Type': 'application/json'
-      },
-      body: JSON.stringify({
-        model,
-        message: lastMessage.content,
-        chat_history: chatHistory,
-        temperature: 0.7,
-        max_tokens: 2000
-      })
-    });
+    try {
+      const response = await fetch('https://api.cohere.ai/v1/chat', {
+        method: 'POST',
+        mode: 'cors',
+        headers: {
+          'Authorization': `Bearer ${apiKey}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          model,
+          message: lastMessage.content,
+          chat_history: chatHistory,
+          temperature: 0.7,
+          max_tokens: 2000
+        })
+      });
 
-    if (!response.ok) {
-      throw new Error(`Cohere API error: ${response.status}`);
-    }
-
-    const data = await response.json();
-    
-    return {
-      content: data.text || 'No response generated',
-      model,
-      provider: 'Cohere',
-      usage: {
-        prompt_tokens: data.meta?.tokens?.input_tokens || 0,
-        completion_tokens: data.meta?.tokens?.output_tokens || 0,
-        total_tokens: (data.meta?.tokens?.input_tokens || 0) + (data.meta?.tokens?.output_tokens || 0)
+      if (!response.ok) {
+        let errorMessage = `Cohere API error: ${response.status}`;
+        try {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+        } catch (e) {
+          // If we can't parse the error response, use the status message
+        }
+        throw new Error(errorMessage);
       }
-    };
+
+      const data = await response.json();
+      
+      return {
+        content: data.text || 'No response generated',
+        model,
+        provider: 'Cohere',
+        usage: {
+          prompt_tokens: data.meta?.tokens?.input_tokens || 0,
+          completion_tokens: data.meta?.tokens?.output_tokens || 0,
+          total_tokens: (data.meta?.tokens?.input_tokens || 0) + (data.meta?.tokens?.output_tokens || 0)
+        }
+      };
+    } catch (error) {
+      if (error instanceof TypeError && error.message.includes('fetch')) {
+        throw new Error('Network error: Unable to connect to Cohere API. Please check your internet connection.');
+      }
+      throw error;
+    }
   }
 }
 
