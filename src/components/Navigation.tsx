@@ -1,21 +1,27 @@
 import React, { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, Sun, Moon, TrendingUp, Brain, Zap, Compass, Settings } from 'lucide-react';
+import { Shield, Sun, Moon, TrendingUp, Brain, Zap, Compass, Settings, Key } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import SettingsPanel from './SettingsPanel';
+import { useApiKeys } from '../contexts/ApiKeyContext';
+import ApiKeyManager from './ApiKeyManager';
+import ModelSelector from './ModelSelector';
 
 const Navigation: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
+  const { hasValidKey } = useApiKeys();
   const location = useLocation();
-  const [showSettings, setShowSettings] = useState(false);
+  const [showApiKeyManager, setShowApiKeyManager] = useState(false);
 
   const navItems = [
     { path: '/discover', name: 'Discover', icon: Compass },
     { path: '/global-pulse', name: 'Global Pulse', icon: TrendingUp },
     { path: '/insight-engine', name: 'Insight Engine', icon: Brain },
     { path: '/chat', name: 'Chat', icon: Zap },
+    { path: '/trending', name: 'Trending', icon: TrendingUp },
   ];
+
+  const hasAnyApiKey = hasValidKey('openai') || hasValidKey('claude') || hasValidKey('mistral') || hasValidKey('cohere');
 
   return (
     <>
@@ -51,7 +57,7 @@ const Navigation: React.FC = () => {
                 <p className={`text-sm font-medium transition-colors ${
                   isDark ? 'text-glow-purple' : 'text-purple-600'
                 }`}>
-                  Advanced Intelligence Platform
+                  BYOK Intelligence Platform
                 </p>
               </div>
             </Link>
@@ -86,20 +92,47 @@ const Navigation: React.FC = () => {
             </div>
 
             {/* Controls */}
-            <div className="flex items-center space-x-2">
-              {/* Settings Button */}
+            <div className="flex items-center space-x-3">
+              {/* Model Selector */}
+              <ModelSelector onApiKeyManager={() => setShowApiKeyManager(true)} />
+
+              {/* API Key Status Indicator */}
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setShowSettings(true)}
+                onClick={() => setShowApiKeyManager(true)}
                 className={`p-3 rounded-xl transition-all duration-300 ${
-                  isDark
-                    ? 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50 shadow-lg shadow-slate-900/20'
-                    : 'bg-slate-100 text-slate-600 hover:bg-slate-200 shadow-lg shadow-slate-500/10'
+                  hasAnyApiKey
+                    ? isDark
+                      ? 'bg-green-500/10 text-green-400 border border-green-500/20'
+                      : 'bg-green-100 text-green-600 border border-green-200'
+                    : isDark
+                      ? 'bg-red-500/10 text-red-400 border border-red-500/20'
+                      : 'bg-red-100 text-red-600 border border-red-200'
                 }`}
+                title={hasAnyApiKey ? 'API Keys Configured' : 'Configure API Keys'}
               >
-                <Settings className="w-5 h-5" />
+                <Key className="w-5 h-5" />
               </motion.button>
+
+              {/* Settings Button */}
+              <Link to="/settings">
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  className={`p-3 rounded-xl transition-all duration-300 ${
+                    location.pathname === '/settings'
+                      ? isDark
+                        ? 'bg-glow-purple/20 text-glow-purple'
+                        : 'bg-purple-100 text-purple-700'
+                      : isDark
+                        ? 'bg-slate-800/50 text-slate-400 hover:bg-slate-700/50'
+                        : 'bg-slate-100 text-slate-600 hover:bg-slate-200'
+                  }`}
+                >
+                  <Settings className="w-5 h-5" />
+                </motion.button>
+              </Link>
 
               {/* Theme Toggle */}
               <motion.button
@@ -119,8 +152,11 @@ const Navigation: React.FC = () => {
         </div>
       </motion.nav>
 
-      {/* Settings Panel */}
-      <SettingsPanel isOpen={showSettings} onClose={() => setShowSettings(false)} />
+      {/* API Key Manager Modal */}
+      <ApiKeyManager 
+        isOpen={showApiKeyManager} 
+        onClose={() => setShowApiKeyManager(false)} 
+      />
     </>
   );
 };

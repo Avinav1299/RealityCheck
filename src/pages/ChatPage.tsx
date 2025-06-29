@@ -17,9 +17,14 @@ import {
   Volume2,
   VolumeX,
   History,
-  Trash2
+  Trash2,
+  Key
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useApiKeys } from '../contexts/ApiKeyContext';
+import { aiService } from '../services/ai/aiService';
+import ModelSelector from '../components/ModelSelector';
+import ApiKeyManager from '../components/ApiKeyManager';
 
 interface Message {
   id: string;
@@ -37,54 +42,24 @@ interface ChatSession {
   lastUpdated: Date;
 }
 
-interface ModelConfig {
-  id: string;
-  name: string;
-  description: string;
-  icon: React.ComponentType<any>;
-  color: string;
-  capabilities: string[];
-}
-
 const ChatPage: React.FC = () => {
   const { isDark } = useTheme();
+  const { selectedModel, availableModels, getActiveKey } = useApiKeys();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
-  const [selectedModel, setSelectedModel] = useState('gpt-4');
   const [chatSessions, setChatSessions] = useState<ChatSession[]>([]);
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(false);
+  const [showApiKeyManager, setShowApiKeyManager] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  const models: ModelConfig[] = [
-    {
-      id: 'gpt-4',
-      name: 'GPT-4',
-      description: 'Advanced reasoning and analysis',
-      icon: Brain,
-      color: 'from-glow-purple to-glow-pink',
-      capabilities: ['Complex reasoning', 'Code generation', 'Creative writing', 'Analysis']
-    },
-    {
-      id: 'mistral',
-      name: 'Mistral',
-      description: 'Fast and efficient responses',
-      icon: Zap,
-      color: 'from-blue-500 to-cyan-500',
-      capabilities: ['Quick responses', 'Multilingual', 'Efficient processing', 'General tasks']
-    },
-    {
-      id: 'ollama',
-      name: 'Ollama',
-      description: 'Local model processing',
-      icon: Settings,
-      color: 'from-green-500 to-emerald-500',
-      capabilities: ['Privacy focused', 'Offline processing', 'Local inference', 'Custom models']
-    }
-  ];
+  // Set up AI service with API keys
+  useEffect(() => {
+    aiService.setApiKeys({ getActiveKey });
+  }, [getActiveKey]);
 
   useEffect(() => {
     scrollToBottom();
@@ -163,19 +138,26 @@ const ChatPage: React.FC = () => {
     setInputMessage('');
     setIsTyping(true);
 
-    // Simulate AI response
-    setTimeout(() => {
+    try {
+      // Use AI service to get response
+      const response = await aiService.chat([
+        { role: 'system', content: 'You are a helpful AI assistant specialized in research, analysis, and providing accurate information.' },
+        ...newMessages.map(msg => ({
+          role: msg.type === 'user' ? 'user' as const : 'assistant' as const,
+          content: msg.content
+        }))
+      ], selectedModel);
+
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
         type: 'assistant',
-        content: generateMockResponse(inputMessage, selectedModel),
+        content: response.content,
         timestamp: new Date(),
-        model: selectedModel
+        model: response.model
       };
 
       const updatedMessages = [...newMessages, aiResponse];
       setMessages(updatedMessages);
-      setIsTyping(false);
 
       // Speak the response if enabled
       speakMessage(aiResponse.content);
@@ -184,33 +166,21 @@ const ChatPage: React.FC = () => {
       if (currentSessionId) {
         updateCurrentSession(updatedMessages);
       }
-    }, 1500 + Math.random() * 2000);
-  };
+    } catch (error) {
+      console.error('AI response error:', error);
+      
+      const errorMessage: Message = {
+        id: (Date.now() + 1).toString(),
+        type: 'assistant',
+        content: 'I apologize, but I encountered an error processing your request. Please check your API key configuration in settings.',
+        timestamp: new Date(),
+        model: selectedModel
+      };
 
-  const generateMockResponse = (input: string, model: string): string => {
-    const responses = {
-      'gpt-4': [
-        "Based on my comprehensive analysis, this is a multifaceted topic that requires careful consideration of various interconnected factors. Let me break this down systematically for you...",
-        "I understand you're seeking insights on this complex matter. From a strategic analytical perspective, there are several key dimensions we should explore...",
-        "This is a fascinating question that intersects multiple domains of knowledge. Allow me to provide you with a thorough, evidence-based analysis..."
-      ],
-      'mistral': [
-        "Here's a focused analysis of your query. The key considerations include several important factors that I'll outline clearly...",
-        "I can help you with that efficiently. Based on current data patterns and established frameworks...",
-        "That's an excellent question. Let me provide you with a structured, actionable response that addresses your core concerns..."
-      ],
-      'ollama': [
-        "Processing your request using local inference capabilities. Based on my analysis of the available information...",
-        "Using privacy-focused local processing to analyze your query. The results indicate several important insights...",
-        "Local model analysis complete. Here are the key findings and recommendations based on your specific requirements..."
-      ]
-    };
-
-    const modelResponses = responses[model as keyof typeof responses] || responses['gpt-4'];
-    const baseResponse = modelResponses[Math.floor(Math.random() * modelResponses.length)];
-    
-    return baseResponse + " This demonstrates the advanced capabilities of " + models.find(m => m.id === model)?.name + 
-           " in providing detailed, contextual responses to complex research questions and analytical challenges.";
+      setMessages([...newMessages, errorMessage]);
+    } finally {
+      setIsTyping(false);
+    }
   };
 
   const createNewSession = () => {
@@ -265,7 +235,7 @@ const ChatPage: React.FC = () => {
     if (messages.length === 0) return;
 
     const chatContent = messages.map(msg => 
-      `**${msg.type === 'user' ? 'You' : models.find(m => m.id === msg.model)?.name || 'Assistant'}**: ${msg.content}\n\n`
+      `**${msg.type === 'user' ? 'You' : `AI (${msg.model})`}**: ${msg.content}\n\n`
     ).join('');
 
     const blob = new Blob([chatContent], { type: 'text/markdown' });
@@ -288,6 +258,9 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  const selectedModelData = availableModels.find(m => m.id === selectedModel);
+  const hasValidApiKey = selectedModelData?.isAvailable || false;
+
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-300 ${
       isDark ? 'bg-black' : 'bg-white'
@@ -306,7 +279,7 @@ const ChatPage: React.FC = () => {
                 : 'bg-slate-100 border-slate-200 text-purple-700'
             }`}>
               <Sparkles className="w-5 h-5" />
-              <span className="font-semibold">Advanced AI Consultation</span>
+              <span className="font-semibold">BYOK AI Consultation</span>
             </div>
             
             <h1 className={`text-5xl font-bold font-display mb-2 transition-colors ${
@@ -317,8 +290,39 @@ const ChatPage: React.FC = () => {
             <p className={`text-lg font-body transition-colors ${
               isDark ? 'text-slate-300' : 'text-slate-600'
             }`}>
-              Engage with advanced AI models for research, analysis, and strategic guidance
+              Engage with your own AI models for research, analysis, and strategic guidance
             </p>
+
+            {!hasValidApiKey && (
+              <motion.div
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                className={`mt-4 p-4 rounded-2xl border ${
+                  isDark
+                    ? 'bg-yellow-500/10 border-yellow-500/20'
+                    : 'bg-yellow-50 border-yellow-200'
+                }`}
+              >
+                <div className="flex items-center justify-center space-x-3">
+                  <Key className="w-5 h-5 text-yellow-400" />
+                  <span className={`font-medium ${isDark ? 'text-yellow-300' : 'text-yellow-700'}`}>
+                    Configure your API keys to start chatting
+                  </span>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setShowApiKeyManager(true)}
+                    className={`px-4 py-2 rounded-xl font-semibold transition-all duration-300 ${
+                      isDark
+                        ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
+                        : 'bg-yellow-200 text-yellow-700 hover:bg-yellow-300'
+                    }`}
+                  >
+                    Add Keys
+                  </motion.button>
+                </div>
+              </motion.div>
+            )}
           </motion.div>
         </div>
       </div>
@@ -341,63 +345,25 @@ const ChatPage: React.FC = () => {
               <h2 className={`text-xl font-bold font-display mb-4 transition-colors ${
                 isDark ? 'text-white' : 'text-slate-900'
               }`}>
-                AI Models
+                AI Model
               </h2>
               
-              <div className="space-y-3">
-                {models.map((model) => {
-                  const Icon = model.icon;
-                  const isSelected = selectedModel === model.id;
-                  
-                  return (
-                    <motion.button
-                      key={model.id}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setSelectedModel(model.id)}
-                      className={`w-full p-4 rounded-2xl border transition-all duration-300 text-left ${
-                        isSelected
-                          ? isDark
-                            ? 'bg-glow-purple/20 border-glow-purple/50 shadow-glow-sm'
-                            : 'bg-purple-100 border-purple-300 shadow-lg shadow-purple-500/10'
-                          : isDark
-                            ? 'bg-white/5 border-white/10 hover:bg-white/10'
-                            : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
-                      }`}
-                    >
-                      <div className="flex items-center space-x-3 mb-2">
-                        <div className={`p-2 rounded-xl bg-gradient-to-r ${model.color}`}>
-                          <Icon className="w-5 h-5 text-white" />
-                        </div>
-                        <span className={`font-semibold transition-colors ${
-                          isDark ? 'text-white' : 'text-slate-900'
-                        }`}>
-                          {model.name}
-                        </span>
-                      </div>
-                      <p className={`text-sm mb-2 transition-colors ${
-                        isDark ? 'text-slate-300' : 'text-slate-600'
-                      }`}>
-                        {model.description}
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {model.capabilities.slice(0, 2).map((capability) => (
-                          <span
-                            key={capability}
-                            className={`text-xs px-2 py-1 rounded-full ${
-                              isDark
-                                ? 'bg-white/10 text-slate-400'
-                                : 'bg-slate-200 text-slate-600'
-                            }`}
-                          >
-                            {capability}
-                          </span>
-                        ))}
-                      </div>
-                    </motion.button>
-                  );
-                })}
-              </div>
+              <ModelSelector onApiKeyManager={() => setShowApiKeyManager(true)} />
+
+              {selectedModelData && (
+                <div className="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10">
+                  <p className={`text-sm leading-relaxed transition-colors ${
+                    isDark ? 'text-slate-300' : 'text-slate-700'
+                  }`}>
+                    {selectedModelData.description}
+                  </p>
+                  {!selectedModelData.isAvailable && selectedModelData.requiresKey && (
+                    <p className="text-xs text-yellow-400 mt-2">
+                      API key required for this model
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Chat Sessions */}
@@ -485,21 +451,25 @@ const ChatPage: React.FC = () => {
               {/* Chat Header */}
               <div className="p-6 border-b border-white/10 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center space-x-3">
-                  <div className={`p-2 rounded-xl bg-gradient-to-r ${models.find(m => m.id === selectedModel)?.color}`}>
-                    {React.createElement(models.find(m => m.id === selectedModel)?.icon || Brain, { className: "w-5 h-5 text-white" })}
-                  </div>
-                  <div>
-                    <h3 className={`font-semibold transition-colors ${
-                      isDark ? 'text-white' : 'text-slate-900'
-                    }`}>
-                      {models.find(m => m.id === selectedModel)?.name}
-                    </h3>
-                    <p className={`text-sm transition-colors ${
-                      isDark ? 'text-slate-400' : 'text-slate-600'
-                    }`}>
-                      {models.find(m => m.id === selectedModel)?.description}
-                    </p>
-                  </div>
+                  {selectedModelData && (
+                    <>
+                      <div className={`p-2 rounded-xl bg-gradient-to-r from-glow-purple to-glow-pink`}>
+                        <Brain className="w-5 h-5 text-white" />
+                      </div>
+                      <div>
+                        <h3 className={`font-semibold transition-colors ${
+                          isDark ? 'text-white' : 'text-slate-900'
+                        }`}>
+                          {selectedModelData.name}
+                        </h3>
+                        <p className={`text-sm transition-colors ${
+                          isDark ? 'text-slate-400' : 'text-slate-600'
+                        }`}>
+                          {selectedModelData.provider}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -618,7 +588,7 @@ const ChatPage: React.FC = () => {
                                 <span className={`text-xs font-medium transition-colors ${
                                   isDark ? 'text-slate-400' : 'text-slate-600'
                                 }`}>
-                                  {models.find(m => m.id === message.model)?.name}
+                                  {message.model}
                                 </span>
                                 <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <button
@@ -686,15 +656,16 @@ const ChatPage: React.FC = () => {
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder="Ask the AI anything..."
-                    className={`flex-1 p-4 rounded-2xl backdrop-blur-sm border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-glow-purple ${
+                    placeholder={hasValidApiKey ? "Ask the AI anything..." : "Configure API keys to start chatting..."}
+                    disabled={!hasValidApiKey}
+                    className={`flex-1 p-4 rounded-2xl backdrop-blur-sm border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-glow-purple disabled:opacity-50 ${
                       isDark
                         ? 'bg-white/5 border-white/10 text-white placeholder-slate-400'
                         : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-500'
                     }`}
                   />
                   
-                  {recognitionRef.current && (
+                  {recognitionRef.current && hasValidApiKey && (
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -715,7 +686,7 @@ const ChatPage: React.FC = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleSendMessage}
-                    disabled={!inputMessage.trim() || isTyping}
+                    disabled={!inputMessage.trim() || isTyping || !hasValidApiKey}
                     className="bg-gradient-to-r from-glow-purple to-glow-pink text-white p-4 rounded-2xl shadow-glow hover:shadow-glow-lg transition-all duration-300 disabled:opacity-50"
                   >
                     <Send className="w-5 h-5" />
@@ -726,6 +697,12 @@ const ChatPage: React.FC = () => {
           </motion.div>
         </div>
       </div>
+
+      {/* API Key Manager Modal */}
+      <ApiKeyManager 
+        isOpen={showApiKeyManager} 
+        onClose={() => setShowApiKeyManager(false)} 
+      />
     </div>
   );
 };

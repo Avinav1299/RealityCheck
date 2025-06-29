@@ -1,61 +1,58 @@
-# RealityCheck AI 2.0
+# RealityCheck AI 2.0 - BYOK Intelligence Platform
 
-Advanced AI-powered intelligence platform that combines real-time media verification, document analysis, and strategic consultation to navigate the information age with confidence.
+Advanced AI-powered intelligence platform with **Bring Your Own API Key (BYOK)** system, real-time web scraping, and comprehensive media verification capabilities.
 
-## 🚀 Features
+## 🚀 Major Features
 
-### 🧭 **Discover**
-- **Live Intelligence Feed**: Trending articles with AI-powered summaries and insights
-- **Trust Scoring**: Advanced verification metrics for content reliability
-- **Smart Filtering**: Filter by trending, latest, verified, or global content
-- **Tag-Based Discovery**: Explore content by topics and categories
-- **Related Articles**: Connected insights and contextual information
-- **Interactive Cards**: Animated discovery interface with hover effects
+### 🔐 **Bring Your Own API Key (BYOK)**
+- **Complete Privacy**: All API keys stored locally in your browser
+- **Multi-Provider Support**: OpenAI, Claude, Mistral, Cohere, Ollama
+- **Cost Control**: Pay only for what you use directly to providers
+- **No Vendor Lock-in**: Switch between models freely
+- **Local Storage**: Keys never sent to our servers
 
-### 🌍 **Global Pulse**
-- **Real-time Media Verification**: Advanced fact-checking across global news sources
-- **Enhanced Image Verification**: Bing Image Search integration for reverse image analysis
-- **GPT-4 Analysis**: Chain-of-thought reasoning with Wikipedia context for comprehensive claim verification
-- **Multiple Source Integration**: NewsAPI, Wikipedia, and RSS feeds for comprehensive coverage
-- **Live Dashboard**: Real-time updates with sector filtering and search capabilities
-- **Reality Digest**: AI-generated strategic summaries and recommendations
+### 🌐 **Real-time Web Scraping**
+- **SearXNG Integration**: Free, open-source metasearch engine
+- **Multiple Instance Rotation**: Automatic failover across public instances
+- **Live Trending Analysis**: Real-time topic detection and scoring
+- **News Aggregation**: Multi-source news gathering and verification
+- **Fact-Check Integration**: Automated fact-checking source discovery
 
-### 📄 **Research**
-- **Document Upload**: Support for PDF, DOCX, and TXT files with drag-and-drop interface
-- **Reality Digest Generation**: Comprehensive AI-powered analysis with key facts extraction
-- **5W Analysis**: Who, What, When, Where, Why connections and insights
-- **Causal Link Mapping**: Identify cause-and-effect relationships with confidence scores
-- **Export Capabilities**: Download reports in PDF or Markdown format
-- **Strategic Recommendations**: AI-generated next actions and implementation guidance
+### 🧭 **Enhanced Discover**
+- **Smart Summaries**: AI-powered article analysis with RAG pipeline
+- **Horizontal Scrolling**: Category-based article browsing
+- **Clickable Intelligence**: In-app article summaries instead of external redirects
+- **Timeline Generation**: Event chronology with AI analysis
+- **Related Content**: Connected insights and contextual information
+- **Trust Scoring**: Advanced verification metrics
 
-### 🧠 **Insight Engine**
-- **Document Intelligence**: Upload PDFs, DOCX, and text files for AI-powered analysis
-- **Research Context**: Define specific research focus for targeted insights
-- **Key Insights Extraction**: Automated identification of critical information
-- **Strategic Recommendations**: Actionable guidance based on document analysis
-- **Category Organization**: Sort by relevance, date, and research domains
+### 📈 **Trending Intelligence**
+- **Live Topic Clusters**: Real-time trending topic analysis
+- **Growth Tracking**: Trend momentum and velocity metrics
+- **Category Filtering**: Technology, health, politics, climate, business
+- **Source Diversity**: Multi-platform trend aggregation
+- **Visual Analytics**: Charts and graphs for trend visualization
 
-### 💬 **Chat**
-- **Multi-Model Support**: Choose from GPT-4, Mistral, or Ollama models
-- **Voice Integration**: Web Speech API for voice queries and responses
-- **Chat History**: Persistent conversation management with local storage
-- **Export Functionality**: Download chat sessions in Markdown format
-- **Real-time Responses**: Advanced AI consultation with typing indicators
+### 🧠 **Dynamic AI Chat**
+- **Model Selection**: Choose from 10+ AI models
+- **Real-time Switching**: Change models mid-conversation
+- **Voice Integration**: Speech-to-text and text-to-speech
+- **Session Management**: Persistent chat history
+- **Export Capabilities**: Download conversations in Markdown
 
-### 🔮 **Oracle Room**
-- **Advanced AI Consultation**: Strategic guidance and expert-level analysis
-- **Document Context Integration**: Reference uploaded documents in conversations
-- **Conversation Management**: Save, export, and organize chat sessions
-- **Model Comparison**: Switch between different AI models for varied perspectives
+### 📊 **Global Pulse Enhanced**
+- **Multi-Source Verification**: Wikipedia, fact-checkers, reverse image search
+- **Real-time Processing**: Live article analysis and verification
+- **Enhanced Image Verification**: Bing Image Search integration
+- **Context Integration**: Wikipedia background information
+- **Strategic Summaries**: AI-generated insights and recommendations
 
-### 🎨 **Design & Experience**
-- **Dark Mode First**: Default black (#000000) theme with light mode toggle
-- **Futuristic Typography**: Poppins, Inter, and Space Grotesk fonts
-- **Glowing UI Accents**: Blue/purple glow effects for interactive elements
-- **Glassmorphism Effects**: Floating card designs with backdrop blur
-- **Smooth Animations**: Framer Motion powered interactions and transitions
-- **Responsive Design**: Optimized for desktop, tablet, and mobile devices
-- **Accessibility**: WCAG compliant with keyboard navigation support
+### 🔍 **Insight Engine Advanced**
+- **Document Intelligence**: PDF, DOCX, TXT analysis
+- **Research Context**: Targeted analysis based on user focus
+- **Key Insights Extraction**: Automated critical information identification
+- **Strategic Recommendations**: Actionable guidance and next steps
+- **Export Options**: PDF and Markdown report generation
 
 ## 🛠 Technology Stack
 
@@ -65,116 +62,77 @@ Advanced AI-powered intelligence platform that combines real-time media verifica
 - **Tailwind CSS** with custom design system and dark/light themes
 - **Framer Motion** for smooth animations and micro-interactions
 - **React Router** for client-side routing and navigation
-- **React Dropzone** for intuitive file upload experiences
 
-### AI & APIs
-- **OpenAI GPT-4** for advanced text analysis and conversation
-- **Bing Image Search API** for reverse image search and manipulation detection
-- **Google APIs** for enhanced search and NLP capabilities
-- **NewsAPI** for real-time news article fetching
-- **Wikipedia API** for contextual information and fact verification
-- **Mistral AI** for fast and efficient language processing
-- **Ollama** for local model processing and privacy
+### AI & Models
+- **OpenAI GPT-4/3.5** for advanced reasoning and analysis
+- **Anthropic Claude 3** (Sonnet, Haiku) for excellent analysis
+- **Mistral AI** (Large, Medium) for multilingual processing
+- **Cohere Command R+** for advanced reasoning
+- **Ollama Local Models** for privacy-focused inference
+
+### Data Sources
+- **SearXNG** for free, open-source web scraping
+- **Wikipedia API** for contextual information (always free)
+- **NewsAPI** for real-time news articles
+- **Bing Image Search** for reverse image verification
+- **RSS Feeds** as fallback news sources
 
 ### Backend & Database
 - **Supabase** (PostgreSQL) for real-time data storage
 - **Real-time Subscriptions** for live UI updates
-- **Row Level Security** for data protection and privacy
+- **Row Level Security** for data protection
 - **Full-text Search** for comprehensive content discovery
-
-### Document Processing
-- **PDF-Parse** for PDF content extraction
-- **Mammoth** for DOCX document processing
-- **jsPDF** for PDF report generation
-- **File Type Detection** for secure upload validation
-
-### Voice & Speech
-- **Web Speech API** for voice input and output
-- **Speech Recognition** for voice-to-text conversion
-- **Speech Synthesis** for text-to-speech responses
-
-## 📋 Database Schema
-
-### Core Tables
-- `articles` - News articles and media content
-- `image_checks` - Enhanced image verification results and metadata
-- `text_checks` - GPT + Wikipedia + Fact Check API analysis results
-- `strategies` - AI-generated strategic recommendations
-- `feedback` - User ratings and community validation
-- `documents` - Uploaded research documents and analysis
-- `chat_sessions` - Chat conversation history
 
 ## 🔧 Setup Instructions
 
 ### 1. Environment Configuration
 
-Create a `.env` file with the following variables:
+Create a `.env` file with your API keys:
 
 ```env
-# Supabase Configuration
+# Supabase Configuration (Required)
 VITE_SUPABASE_URL=your_supabase_project_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 
-# Primary API Keys
-VITE_NEWSAPI_KEY=your_newsapi_key
+# AI Model APIs (Optional - Configure in Settings)
 VITE_OPENAI_API_KEY=your_openai_api_key
+VITE_CLAUDE_API_KEY=your_claude_api_key
+VITE_MISTRAL_API_KEY=your_mistral_api_key
+VITE_COHERE_API_KEY=your_cohere_api_key
 
-# Enhanced API Keys
-VITE_GOOGLE_API_KEY=your_google_api_key
+# Data Service APIs (Optional)
+VITE_NEWSAPI_KEY=your_newsapi_key
 VITE_BING_IMAGE_API_KEY=your_bing_image_search_api_key
+VITE_GOOGLE_API_KEY=your_google_api_key
 
-# Free/Open APIs
-VITE_WIKI_API_BASE=https://en.wikipedia.org/w/api.php
-
-# Settings
-VITE_USE_FREE_SOURCES_ONLY=false
-
-# Legacy APIs (Optional)
-VITE_TINEYE_API_KEY=your_tineye_api_key
-VITE_TINEYE_PRIVATE_KEY=your_tineye_private_key
+# Ollama Configuration (Optional)
+VITE_OLLAMA_BASE_URL=http://localhost:11434
 ```
 
-### 2. Database Setup
+### 2. BYOK Configuration
+
+The platform is designed to work **100% without built-in API keys**:
+
+1. **Launch the application** - it works immediately with free sources
+2. **Click the API key icon** in the navigation to open the API Key Manager
+3. **Add your own API keys** for the services you want to use
+4. **Select your preferred AI model** from the model selector
+5. **Start using advanced features** powered by your own keys
+
+### 3. Free Sources Mode
+
+The platform provides full functionality using only free sources:
+- **Wikipedia API** for contextual information
+- **SearXNG** for web scraping and search
+- **RSS Feeds** for news aggregation
+- **Mock Intelligence** for development and testing
+
+### 4. Database Setup
 
 1. Create a new Supabase project at [supabase.com](https://supabase.com)
 2. Run the migration file: `supabase/migrations/create_realitycheck_schema.sql`
 3. Verify all tables, policies, and indexes are created correctly
 4. Enable real-time subscriptions for live updates
-
-### 3. API Key Configuration
-
-#### NewsAPI (Primary News Source)
-1. Create account at [NewsAPI](https://newsapi.org)
-2. Get your API key (100 requests/day free)
-3. Add to environment variables
-
-#### OpenAI API (Text Analysis)
-1. Create account at [OpenAI Platform](https://platform.openai.com)
-2. Generate API key with GPT-4 access
-3. Add to environment variables
-
-#### Bing Image Search API (Image Verification)
-1. Sign up at [Azure Cognitive Services](https://azure.microsoft.com/en-us/services/cognitive-services/bing-image-search-api/)
-2. Get your Bing Search API key
-3. Add to environment variables
-
-#### Google APIs (Enhanced Search & NLP)
-1. Enable relevant APIs in Google Cloud Console
-2. Create credentials and get API key
-3. Add to environment variables
-
-#### Wikipedia API (Always Available)
-- No API key required
-- Uses public Wikipedia API endpoints
-- Provides contextual information and fact verification
-
-### 4. Free Sources Mode
-
-Enable "Use Free Sources Only" in settings to rely exclusively on:
-- **Wikipedia API** for contextual information
-- **RSS Feeds** for news content
-- **Open APIs** for basic functionality
-- **Mock Data** for development and testing
 
 ### 5. Development
 
@@ -192,102 +150,125 @@ npm run build
 npm run preview
 ```
 
-## 🎯 User Flow
+## 🔑 API Key Configuration
 
-### 1. **Discover** → Intelligence Exploration
+### AI Models
+
+#### OpenAI (GPT-4, GPT-3.5 Turbo)
+- **Website**: [platform.openai.com](https://platform.openai.com)
+- **Key Format**: `sk-...`
+- **Models**: GPT-4, GPT-3.5 Turbo
+- **Best For**: Complex reasoning, analysis, creative tasks
+
+#### Anthropic Claude
+- **Website**: [console.anthropic.com](https://console.anthropic.com)
+- **Key Format**: `sk-ant-...`
+- **Models**: Claude 3 Sonnet, Claude 3 Haiku
+- **Best For**: Analysis, reasoning, safety-focused responses
+
+#### Mistral AI
+- **Website**: [console.mistral.ai](https://console.mistral.ai)
+- **Key Format**: `api_key...`
+- **Models**: Mistral Large, Mistral Medium
+- **Best For**: Multilingual tasks, efficient processing
+
+#### Cohere
+- **Website**: [dashboard.cohere.ai](https://dashboard.cohere.ai)
+- **Key Format**: `co_...`
+- **Models**: Command R+
+- **Best For**: Advanced reasoning, generation tasks
+
+#### Ollama (Local)
+- **Website**: [ollama.ai](https://ollama.ai)
+- **Setup**: Install Ollama locally, no API key required
+- **Models**: Llama 2, Code Llama, Mistral 7B, and more
+- **Best For**: Privacy, offline processing, custom models
+
+### Data Services
+
+#### NewsAPI
+- **Website**: [newsapi.org](https://newsapi.org)
+- **Free Tier**: 100 requests/day
+- **Purpose**: Real-time news articles
+
+#### Bing Image Search
+- **Website**: [Azure Cognitive Services](https://azure.microsoft.com/services/cognitive-services/bing-image-search-api/)
+- **Purpose**: Reverse image search and verification
+
+#### Google APIs
+- **Website**: [console.cloud.google.com](https://console.cloud.google.com)
+- **Purpose**: Enhanced search and fact-checking
+
+## 🎯 User Workflows
+
+### 1. **Discover** → Enhanced Intelligence Exploration
 - Browse trending articles with AI summaries and trust scores
-- Filter by content type, topic, and verification status
-- Explore related articles and contextual insights
-- Access detailed analysis and source verification
+- Click articles for in-app smart summaries instead of external links
+- Generate event timelines with AI analysis
+- Explore related content and contextual insights
+- Filter by category, source, and verification status
 
-### 2. **Research** → Document Analysis
-- Upload research documents with contextual information
-- Receive comprehensive Reality Digests with key facts
-- Explore 5W analysis and causal link mapping
-- Download detailed reports in PDF or Markdown format
+### 2. **Trending** → Real-time Global Intelligence
+- Monitor live trending topics across multiple categories
+- View topic clusters with growth metrics and source diversity
+- Analyze trending timelines and pattern recognition
+- Search for specific trending topics and events
+- Export trending reports and analysis
 
-### 3. **Chat** → AI Consultation
-- Choose from multiple AI models for different use cases
-- Engage in voice-enabled conversations with speech synthesis
-- Maintain persistent chat history with export capabilities
-- Access model-specific capabilities and features
+### 3. **Chat** → Multi-Model AI Consultation
+- Choose from 10+ AI models based on your API keys
+- Switch models mid-conversation for different perspectives
+- Use voice input and speech synthesis for hands-free interaction
+- Maintain persistent chat history with session management
+- Export conversations in Markdown format
 
-### 4. **Global Pulse** → Media Verification
-- Monitor real-time verified news across sectors
-- View verification badges and confidence scores
-- Access Reality Digest summaries and strategic insights
-- Provide feedback on content accuracy and helpfulness
+### 4. **Global Pulse** → Enhanced Media Verification
+- Real-time article processing with multi-source verification
+- Wikipedia context integration for background information
+- Enhanced image verification using Bing Image Search
+- Strategic AI summaries and actionable recommendations
+- Community feedback and trust scoring
 
-### 5. **Insight Engine** → Advanced Analysis
-- Upload documents for AI-powered research insights
-- Define research context for targeted analysis
-- Receive strategic recommendations and next steps
+### 5. **Insight Engine** → Advanced Document Analysis
+- Upload research documents with contextual focus
+- Receive comprehensive AI-powered analysis
+- Extract key insights and strategic recommendations
 - Organize results by category and confidence levels
+- Export detailed reports in multiple formats
 
-## 🤖 AI Model Support
+## 🌐 Free vs. Paid Features
 
-### GPT-4 (OpenAI)
-- **Strengths**: Advanced reasoning, comprehensive analysis, creative problem-solving
-- **Use Cases**: Complex research questions, strategic planning, detailed analysis
-- **Features**: Chain-of-thought reasoning, Wikipedia context integration, multimodal capabilities
+### Always Free
+- **SearXNG Web Scraping**: Unlimited search across multiple sources
+- **Wikipedia Integration**: Contextual information and fact-checking
+- **RSS News Feeds**: Basic news aggregation
+- **Document Upload**: File processing and basic analysis
+- **Trending Analysis**: Real-time topic detection
+- **Basic Chat**: Using mock responses for testing
 
-### Mistral AI
-- **Strengths**: Fast processing, efficient responses, multilingual support
-- **Use Cases**: Quick analysis, real-time verification, general inquiries
-- **Features**: Efficient processing, cost-effective, multilingual capabilities
+### With Your API Keys
+- **Advanced AI Chat**: Full conversations with your chosen models
+- **Smart Summaries**: AI-powered article analysis with RAG
+- **Enhanced Verification**: Advanced fact-checking and analysis
+- **Strategic Insights**: AI-generated recommendations and next steps
+- **Voice Features**: Speech-to-text and text-to-speech
+- **Premium Sources**: NewsAPI, Bing Image Search, Google APIs
 
-### Ollama (Local)
-- **Strengths**: Privacy-focused, offline processing, customizable models
-- **Use Cases**: Sensitive documents, air-gapped environments, custom workflows
-- **Features**: Local inference, privacy protection, custom model support
+## 🔒 Privacy & Security
 
-## 🔗 API Services & Alternatives
+### Data Protection
+- **Local Storage**: All API keys stored in your browser only
+- **No Server Storage**: Keys never transmitted to our servers
+- **Row Level Security**: Supabase RLS policies for data protection
+- **Input Validation**: Comprehensive sanitization and validation
+- **CORS Configuration**: Proper cross-origin security setup
 
-### Primary Services
-- **NewsAPI**: Real-time news articles (100 requests/day free)
-- **OpenAI GPT-4**: Advanced text analysis and reasoning
-- **Bing Image Search**: Reverse image search and verification
-- **Google APIs**: Enhanced search and NLP capabilities
-
-### Free Alternatives
-- **Wikipedia API**: Always available, no API key required
-- **RSS Feeds**: Multiple news sources for content aggregation
-- **Mock Intelligence**: Realistic fallback data for development
-- **Open APIs**: Community-driven data sources
-
-### Fallback Strategy
-1. **Primary APIs**: Use commercial services when available
-2. **Free Sources**: Fall back to Wikipedia and RSS feeds
-3. **Mock Data**: Provide realistic data for development and demos
-4. **Graceful Degradation**: Maintain functionality regardless of API availability
-
-## 🎨 UI Design Philosophy
-
-### Dark-First Design
-- **Default Black Theme**: Pure black (#000000) background for optimal contrast
-- **Light Mode Toggle**: Clean white (#ffffff) alternative theme
-- **Glowing Accents**: Blue/purple glow effects for interactive elements
-- **Consistent Branding**: Purple-pink gradient identity throughout
-
-### Futuristic Typography
-- **Display Font**: Space Grotesk for headlines and branding
-- **Body Font**: Poppins for readable content and descriptions
-- **System Font**: Inter as fallback for optimal performance
-- **Font Weights**: Maximum 2 weights for clean hierarchy
-
-### Glassmorphism Effects
-- **Floating Cards**: Elevated design with soft shadows and backdrop blur
-- **Transparency**: Strategic use of opacity for depth and layering
-- **Smooth Transitions**: Framer Motion powered animations
-- **Interactive Feedback**: Hover states and micro-interactions
-
-### Component Naming Convention
-- **Discover**: Live intelligence exploration and trending content
-- **Global Pulse**: Real-time media verification feed
-- **Research**: Document upload and Reality Digest generation
-- **Insight Engine**: Advanced document analysis workspace
-- **Chat**: Multi-model AI conversation interface
-- **Oracle Room**: Advanced AI consultation and strategic planning
+### Privacy Features
+- **BYOK Architecture**: Complete control over your AI interactions
+- **Local Processing**: Ollama support for offline AI inference
+- **Data Retention**: Configurable cleanup policies
+- **Transparent Usage**: Clear indication of which services are being used
+- **No Tracking**: No analytics or tracking without explicit consent
 
 ## 🚀 Deployment
 
@@ -297,12 +278,13 @@ npm run preview
 - **Supabase** (Database + Real-time + Storage)
 
 ### Environment Variables
-Ensure all API keys are properly configured in your deployment platform's environment settings.
+Ensure all API keys are properly configured in your deployment platform's environment settings, or use the in-app API Key Manager for user-provided keys.
 
 ### Build Optimization
 - **Code Splitting**: Automatic route-based splitting
 - **Asset Optimization**: Vite's built-in optimization
 - **Bundle Analysis**: Use `npm run build` to analyze bundle size
+- **Progressive Loading**: Lazy loading for optimal performance
 
 ## 📈 Performance & Scaling
 
@@ -318,20 +300,6 @@ Ensure all API keys are properly configured in your deployment platform's enviro
 - **API Caching**: Redis for frequently accessed data
 - **Load Balancing**: Horizontal scaling for high traffic
 
-## 🔒 Security & Privacy
-
-### Data Protection
-- **Row Level Security**: Supabase RLS policies
-- **API Key Protection**: Environment variable security
-- **Input Validation**: Comprehensive sanitization
-- **CORS Configuration**: Proper cross-origin setup
-
-### Privacy Features
-- **Local Processing**: Ollama for sensitive documents
-- **Data Retention**: Configurable cleanup policies
-- **User Consent**: Transparent data usage policies
-- **Encryption**: End-to-end for sensitive communications
-
 ## 🤝 Contributing
 
 1. Fork the repository
@@ -343,8 +311,9 @@ Ensure all API keys are properly configured in your deployment platform's enviro
 ### Development Guidelines
 - Follow TypeScript best practices
 - Use Tailwind CSS for styling
+- Implement BYOK patterns for new features
 - Write comprehensive tests
-- Document new features
+- Document new features and API integrations
 - Maintain accessibility standards
 
 ## 📄 License
@@ -361,6 +330,6 @@ For support and questions:
 
 ---
 
-**RealityCheck AI 2.0** - Empowering truth through advanced intelligence in the digital age.
+**RealityCheck AI 2.0** - The first truly open intelligence platform where you bring your own keys and maintain complete control over your AI interactions.
 
-*Built with ❤️ for researchers, journalists, analysts, and truth-seekers worldwide.*
+*Built with ❤️ for researchers, journalists, analysts, and truth-seekers who value privacy, control, and cutting-edge AI capabilities.*
