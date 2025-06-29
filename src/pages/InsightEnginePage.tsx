@@ -5,15 +5,8 @@ import {
   Upload, 
   FileText, 
   Brain, 
-  Zap, 
-  Download,
-  Search,
-  Filter,
-  Calendar,
-  Tag,
-  Sparkles,
-  Eye,
-  TrendingUp
+  Zap,
+  Sparkles
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 

@@ -126,7 +126,7 @@ export async function searchWithSearXNG(
 /**
  * Search for trending topics across multiple categories
  */
-export async function searchTrendingTopics(region: string = 'global'): Promise<{ trending: TrendingTopic[] }> {
+export async function searchTrendingTopics(): Promise<{ trending: TrendingTopic[] }> {
   const trendingQueries = [
     { query: 'breaking news today', category: 'news', weight: 1.0 },
     { query: 'latest technology AI developments', category: 'technology', weight: 0.9 },
@@ -182,15 +182,15 @@ export async function searchNewsRealtime(
     
     // Filter and enhance news results
     const newsResults = searchResults.results
-      .filter(result => isNewsSource(result.url) || result.category === 'news')
-      .map(result => ({
+      .filter((result: SearchResult) => isNewsSource(result.url) || result.category === 'news')
+      .map((result: SearchResult) => ({
         ...result,
         publishedDate: result.publishedDate || estimatePublishDate(result.content),
         thumbnail: result.img_src || generateThumbnail(result.category),
         verified: isVerifiedSource(result.source),
         breaking: isBreakingNews(result.title, result.content)
       }))
-      .sort((a, b) => {
+      .sort((a: any, b: any) => {
         // Prioritize breaking news and recent articles
         if (a.breaking && !b.breaking) return -1;
         if (!a.breaking && b.breaking) return 1;
@@ -203,7 +203,7 @@ export async function searchNewsRealtime(
       query,
       source: 'searxng-news',
       timestamp: new Date().toISOString(),
-      categories: [...new Set(newsResults.map(r => r.category))]
+      categories: [...new Set(newsResults.map((r: any) => r.category))]
     };
   } catch (error) {
     console.error('Real-time news search error:', error);
@@ -231,7 +231,7 @@ export async function searchFactCheckSources(claim: string) {
     const results = await searchWithSearXNG(query, ['general'], '', 10);
     
     return {
-      factChecks: results.results.map(result => ({
+      factChecks: results.results.map((result: SearchResult) => ({
         title: result.title,
         url: result.url,
         snippet: result.content,
@@ -267,7 +267,7 @@ export async function searchEventTimeline(topic: string) {
     try {
       const results = await searchWithSearXNG(query, ['general', 'news'], '', 5);
       
-      timelineData.push(...results.results.map(result => ({
+      timelineData.push(...results.results.map((result: SearchResult) => ({
         title: result.title,
         description: result.content,
         url: result.url,
@@ -282,7 +282,7 @@ export async function searchEventTimeline(topic: string) {
   }
 
   // Sort by relevance and date
-  timelineData.sort((a, b) => {
+  timelineData.sort((a: any, b: any) => {
     const relevanceDiff = b.relevance - a.relevance;
     if (Math.abs(relevanceDiff) > 0.1) return relevanceDiff;
     return new Date(b.date).getTime() - new Date(a.date).getTime();

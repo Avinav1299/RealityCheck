@@ -3,19 +3,16 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { 
   Brain, 
-  MessageSquare, 
   TrendingUp, 
   Shield, 
   Zap,
   ArrowRight,
   Sparkles,
-  Globe,
   Compass,
   Target,
   Activity,
   Clock,
-  Users,
-  Database
+  Users
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import TodaysInsight from '../components/TodaysInsight';
@@ -173,7 +170,7 @@ const HomePage: React.FC = () => {
           transition={{ duration: 0.8, delay: 1.2 }}
           className="grid md:grid-cols-2 lg:grid-cols-2 gap-8 mb-20"
         >
-          {features.map((feature, index) => {
+          {features.map((feature) => {
             const Icon = feature.icon;
             return (
               <motion.div
@@ -251,14 +248,14 @@ const HomePage: React.FC = () => {
           </div>
           
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => {
+            {stats.map((stat, statIndex) => {
               const Icon = stat.icon;
               return (
                 <motion.div
                   key={stat.label}
                   initial={{ opacity: 0, scale: 0.8 }}
                   animate={{ opacity: 1, scale: 1 }}
-                  transition={{ duration: 0.6, delay: 1.6 + index * 0.1 }}
+                  transition={{ duration: 0.6, delay: 1.6 + statIndex * 0.1 }}
                   className="text-center"
                 >
                   <div className={`inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4 shadow-lg ${

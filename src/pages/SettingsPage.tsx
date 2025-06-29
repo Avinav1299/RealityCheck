@@ -1,9 +1,19 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Settings, Key, Database, Globe, Shield, Bell, Palette, Monitor, Smartphone, Zap, Brain, Eye, ToggleLeft, ToggleRight, Save, RefreshCw } from 'lucide-react';
+import { Settings, Database, Globe, Shield, Monitor, Zap, Brain, Eye, ToggleLeft, ToggleRight, Save, RefreshCw } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { useApiKeys } from '../contexts/ApiKeyContext';
 import ApiKeyManager from '../components/ApiKeyManager';
+
+interface SettingItem {
+  key: string;
+  name: string;
+  description: string;
+  type: 'toggle' | 'action';
+  value?: boolean;
+  action?: () => void;
+  actionText?: string;
+}
 
 const SettingsPage: React.FC = () => {
   const { isDark } = useTheme();
@@ -56,7 +66,7 @@ const SettingsPage: React.FC = () => {
           key: 'aiModels',
           name: 'Available Models',
           description: `${availableModels.filter(m => m.isAvailable).length}/${availableModels.length} models configured`,
-          type: 'action',
+          type: 'action' as const,
           action: () => setShowApiKeyManager(true),
           actionText: 'Manage API Keys'
         }
@@ -70,28 +80,28 @@ const SettingsPage: React.FC = () => {
           key: 'notifications',
           name: 'Notifications',
           description: 'Show system notifications and alerts',
-          type: 'toggle',
+          type: 'toggle' as const,
           value: settings.notifications
         },
         {
           key: 'autoRefresh',
           name: 'Auto Refresh',
           description: 'Automatically refresh content every 30 seconds',
-          type: 'toggle',
+          type: 'toggle' as const,
           value: settings.autoRefresh
         },
         {
           key: 'compactMode',
           name: 'Compact Mode',
           description: 'Use smaller cards and reduced spacing',
-          type: 'toggle',
+          type: 'toggle' as const,
           value: settings.compactMode
         },
         {
           key: 'showPreviews',
           name: 'Show Previews',
           description: 'Display article previews and thumbnails',
-          type: 'toggle',
+          type: 'toggle' as const,
           value: settings.showPreviews
         }
       ]
@@ -104,14 +114,14 @@ const SettingsPage: React.FC = () => {
           key: 'enableVoice',
           name: 'Voice Features',
           description: 'Enable voice input and speech synthesis',
-          type: 'toggle',
+          type: 'toggle' as const,
           value: settings.enableVoice
         },
         {
           key: 'saveHistory',
           name: 'Save History',
           description: 'Keep chat and search history locally',
-          type: 'toggle',
+          type: 'toggle' as const,
           value: settings.saveHistory
         }
       ]
@@ -124,7 +134,7 @@ const SettingsPage: React.FC = () => {
           key: 'analytics',
           name: 'Usage Analytics',
           description: 'Help improve the platform by sharing anonymous usage data',
-          type: 'toggle',
+          type: 'toggle' as const,
           value: settings.analytics
         }
       ]
@@ -191,7 +201,7 @@ const SettingsPage: React.FC = () => {
                 </div>
 
                 <div className="space-y-4">
-                  {section.settings.map((setting) => (
+                  {section.settings.map((setting: SettingItem) => (
                     <div
                       key={setting.key}
                       className={`flex items-center justify-between p-4 rounded-2xl border ${
@@ -214,7 +224,7 @@ const SettingsPage: React.FC = () => {
                       </div>
 
                       <div className="ml-4">
-                        {setting.type === 'toggle' && (
+                        {setting.type === 'toggle' && setting.value !== undefined && (
                           <button
                             onClick={() => updateSetting(setting.key, !setting.value)}
                             className={`p-1 rounded-full transition-colors ${
@@ -229,7 +239,7 @@ const SettingsPage: React.FC = () => {
                           </button>
                         )}
 
-                        {setting.type === 'action' && (
+                        {setting.type === 'action' && setting.action && setting.actionText && (
                           <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
