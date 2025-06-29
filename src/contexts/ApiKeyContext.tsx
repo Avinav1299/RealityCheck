@@ -54,7 +54,7 @@ const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
     google: ''
   });
 
-  const [selectedModel, setSelectedModel] = useState('gpt-4');
+  const [selectedModel, setSelectedModel] = useState('ollama-llama2');
 
   // Load API keys from localStorage on mount
   useEffect(() => {
@@ -102,6 +102,30 @@ const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
   };
 
   const availableModels = [
+    {
+      id: 'ollama-llama2',
+      name: 'Llama 2 (Local)',
+      provider: 'Ollama',
+      description: 'Local inference, privacy-focused',
+      requiresKey: false,
+      isAvailable: true
+    },
+    {
+      id: 'ollama-codellama',
+      name: 'Code Llama (Local)',
+      provider: 'Ollama',
+      description: 'Specialized for code and technical tasks',
+      requiresKey: false,
+      isAvailable: true
+    },
+    {
+      id: 'ollama-mistral',
+      name: 'Mistral 7B (Local)',
+      provider: 'Ollama',
+      description: 'Fast local inference',
+      requiresKey: false,
+      isAvailable: true
+    },
     {
       id: 'gpt-4',
       name: 'GPT-4',
@@ -157,30 +181,6 @@ const ApiKeyProvider: React.FC<ApiKeyProviderProps> = ({ children }) => {
       description: 'Advanced reasoning and generation',
       requiresKey: true,
       isAvailable: hasValidKey('cohere')
-    },
-    {
-      id: 'llama2-70b',
-      name: 'Llama 2 70B',
-      provider: 'Ollama (Local)',
-      description: 'Local inference, privacy-focused',
-      requiresKey: false,
-      isAvailable: true // Always available if Ollama is running
-    },
-    {
-      id: 'codellama-34b',
-      name: 'Code Llama 34B',
-      provider: 'Ollama (Local)',
-      description: 'Specialized for code and technical tasks',
-      requiresKey: false,
-      isAvailable: true
-    },
-    {
-      id: 'mistral-7b',
-      name: 'Mistral 7B',
-      provider: 'Ollama (Local)',
-      description: 'Fast local inference',
-      requiresKey: false,
-      isAvailable: true
     }
   ];
 

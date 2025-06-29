@@ -19,10 +19,13 @@ import {
   Trash2,
   AlertCircle,
   CheckCircle,
-  XCircle
+  XCircle,
+  Key
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useApiKeys } from '../contexts/ApiKeyContext';
 import { ollamaService } from '../services/ai/ollamaService';
+import { aiService } from '../services/ai/aiService';
 
 interface Message {
   id: string;
@@ -30,6 +33,7 @@ interface Message {
   content: string;
   timestamp: Date;
   model?: string;
+  provider?: string;
   error?: boolean;
 }
 
@@ -41,15 +45,9 @@ interface ChatSession {
   lastUpdated: Date;
 }
 
-interface OllamaModel {
-  name: string;
-  model: string;
-  modified_at: string;
-  size: number;
-}
-
 const ChatPage: React.FC = () => {
   const { isDark } = useTheme();
+  const { apiKeys, selectedModel, setSelectedModel, availableModels } = useApiKeys();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -59,8 +57,6 @@ const ChatPage: React.FC = () => {
   const [speechEnabled, setSpeechEnabled] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [ollamaConnected, setOllamaConnected] = useState(false);
-  const [availableModels, setAvailableModels] = useState<OllamaModel[]>([]);
-  const [selectedModel, setSelectedModel] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
@@ -104,11 +100,6 @@ const ChatPage: React.FC = () => {
     try {
       const connection = await ollamaService.checkConnection();
       setOllamaConnected(connection.connected);
-      setAvailableModels(connection.models);
-      
-      if (connection.connected && connection.models.length > 0 && !selectedModel) {
-        setSelectedModel(connection.models[0].name);
-      }
       
       if (!connection.connected) {
         setConnectionError('Ollama not detected. Please start Ollama on your local machine.');
@@ -151,7 +142,16 @@ const ChatPage: React.FC = () => {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
-    if (!ollamaConnected) {
+    const selectedModelData = availableModels.find(m => m.id === selectedModel);
+    
+    // Check if model requires API key and is available
+    if (selectedModelData?.requiresKey && !selectedModelData.isAvailable) {
+      setConnectionError(`${selectedModelData.provider} API key not configured. Please add your API key in settings.`);
+      return;
+    }
+
+    // Check Ollama connection for local models
+    if (selectedModel.startsWith('ollama-') && !ollamaConnected) {
       setConnectionError('Ollama not connected. Please start Ollama and try again.');
       return;
     }
@@ -171,13 +171,13 @@ const ChatPage: React.FC = () => {
     setIsTyping(true);
 
     try {
-      const response = await ollamaService.chat([
+      const response = await aiService.chat([
         { role: 'system', content: 'You are a helpful AI assistant specialized in research, analysis, and providing accurate information.' },
         ...newMessages.map(msg => ({
           role: msg.type === 'user' ? 'user' as const : 'assistant' as const,
           content: msg.content
         }))
-      ], selectedModel);
+      ], selectedModel, apiKeys);
 
       const aiResponse: Message = {
         id: (Date.now() + 1).toString(),
@@ -185,6 +185,7 @@ const ChatPage: React.FC = () => {
         content: response.content,
         timestamp: new Date(),
         model: response.model,
+        provider: response.provider,
         error: false
       };
 
@@ -201,7 +202,7 @@ const ChatPage: React.FC = () => {
         updateCurrentSession(updatedMessages);
       }
     } catch (error) {
-      console.error('Ollama response error:', error);
+      console.error('AI response error:', error);
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -209,6 +210,7 @@ const ChatPage: React.FC = () => {
         content: error instanceof Error ? error.message : 'An unexpected error occurred. Please try again.',
         timestamp: new Date(),
         model: selectedModel,
+        provider: selectedModelData?.provider || 'Unknown',
         error: true
       };
 
@@ -274,7 +276,7 @@ const ChatPage: React.FC = () => {
     if (messages.length === 0) return;
 
     const chatContent = messages.map(msg => 
-      `**${msg.type === 'user' ? 'You' : `AI (${msg.model})`}**: ${msg.content}\n\n`
+      `**${msg.type === 'user' ? 'You' : `AI (${msg.provider})`}**: ${msg.content}\n\n`
     ).join('');
 
     const blob = new Blob([chatContent], { type: 'text/markdown' });
@@ -298,6 +300,24 @@ const ChatPage: React.FC = () => {
     }
   };
 
+  const getModelStatusIcon = () => {
+    const selectedModelData = availableModels.find(m => m.id === selectedModel);
+    
+    if (!selectedModelData) {
+      return <XCircle className="w-4 h-4 text-red-400" />;
+    }
+
+    if (selectedModelData.requiresKey && !selectedModelData.isAvailable) {
+      return <Key className="w-4 h-4 text-yellow-400" />;
+    }
+
+    if (selectedModel.startsWith('ollama-') && !ollamaConnected) {
+      return <XCircle className="w-4 h-4 text-red-400" />;
+    }
+
+    return <CheckCircle className="w-4 h-4 text-green-400" />;
+  };
+
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-300 ${
       isDark ? 'bg-black' : 'bg-white'
@@ -316,7 +336,7 @@ const ChatPage: React.FC = () => {
                 : 'bg-slate-100 border-slate-200 text-purple-700'
             }`}>
               <Sparkles className="w-5 h-5" />
-              <span className="font-semibold">Ollama-Powered AI Chat</span>
+              <span className="font-semibold">Multi-Model AI Chat</span>
             </div>
             
             <h1 className={`text-5xl font-bold font-display mb-2 transition-colors ${
@@ -327,34 +347,23 @@ const ChatPage: React.FC = () => {
             <p className={`text-lg font-body transition-colors ${
               isDark ? 'text-slate-300' : 'text-slate-600'
             }`}>
-              Chat with your local Ollama models for research, analysis, and strategic guidance
+              Chat with multiple AI models including local Ollama and cloud providers
             </p>
 
             {/* Connection Status */}
             <div className="mt-4">
-              {ollamaConnected ? (
-                <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full ${
-                  isDark
-                    ? 'bg-green-500/10 border border-green-500/20'
-                    : 'bg-green-50 border border-green-200'
+              <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full ${
+                isDark
+                  ? 'bg-white/5 border border-white/10'
+                  : 'bg-slate-50 border border-slate-200'
+              }`}>
+                {getModelStatusIcon()}
+                <span className={`font-medium text-sm transition-colors ${
+                  isDark ? 'text-white' : 'text-slate-900'
                 }`}>
-                  <CheckCircle className="w-4 h-4 text-green-400" />
-                  <span className="text-green-400 font-medium text-sm">
-                    Ollama Connected ({availableModels.length} models)
-                  </span>
-                </div>
-              ) : (
-                <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full ${
-                  isDark
-                    ? 'bg-red-500/10 border border-red-500/20'
-                    : 'bg-red-50 border border-red-200'
-                }`}>
-                  <XCircle className="w-4 h-4 text-red-400" />
-                  <span className="text-red-400 font-medium text-sm">
-                    Ollama Not Connected
-                  </span>
-                </div>
-              )}
+                  {availableModels.find(m => m.id === selectedModel)?.name || 'No Model Selected'}
+                </span>
+              </div>
             </div>
 
             {connectionError && (
@@ -409,55 +418,57 @@ const ChatPage: React.FC = () => {
               <h2 className={`text-xl font-bold font-display mb-4 transition-colors ${
                 isDark ? 'text-white' : 'text-slate-900'
               }`}>
-                Ollama Models
+                AI Models
               </h2>
               
-              {ollamaConnected && availableModels.length > 0 ? (
-                <div className="space-y-3">
-                  {availableModels.map((model) => (
-                    <motion.button
-                      key={model.name}
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                      onClick={() => setSelectedModel(model.name)}
-                      className={`w-full p-3 rounded-xl border transition-all duration-300 text-left ${
-                        selectedModel === model.name
-                          ? isDark
-                            ? 'bg-glow-purple/20 border-glow-purple/50 text-white'
-                            : 'bg-purple-100 border-purple-300 text-purple-900'
-                          : isDark
-                            ? 'bg-white/5 border-white/10 text-white hover:bg-white/10'
-                            : 'bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100'
-                      }`}
-                    >
-                      <div className="font-semibold">{model.name}</div>
-                      <div className={`text-xs ${
-                        selectedModel === model.name
-                          ? isDark ? 'text-purple-300' : 'text-purple-700'
-                          : isDark ? 'text-slate-400' : 'text-slate-600'
-                      }`}>
-                        {(model.size / (1024 * 1024 * 1024)).toFixed(1)} GB
+              <div className="space-y-3">
+                {availableModels.map((model) => (
+                  <motion.button
+                    key={model.id}
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setSelectedModel(model.id)}
+                    className={`w-full p-3 rounded-xl border transition-all duration-300 text-left ${
+                      selectedModel === model.id
+                        ? isDark
+                          ? 'bg-glow-purple/20 border-glow-purple/50 text-white'
+                          : 'bg-purple-100 border-purple-300 text-purple-900'
+                        : isDark
+                          ? 'bg-white/5 border-white/10 text-white hover:bg-white/10'
+                          : 'bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <div className="flex-1">
+                        <div className="font-semibold">{model.name}</div>
+                        <div className={`text-xs ${
+                          selectedModel === model.id
+                            ? isDark ? 'text-purple-300' : 'text-purple-700'
+                            : isDark ? 'text-slate-400' : 'text-slate-600'
+                        }`}>
+                          {model.provider}
+                        </div>
+                        <div className={`text-xs mt-1 ${
+                          selectedModel === model.id
+                            ? isDark ? 'text-purple-200' : 'text-purple-600'
+                            : isDark ? 'text-slate-500' : 'text-slate-500'
+                        }`}>
+                          {model.description}
+                        </div>
                       </div>
-                    </motion.button>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <Bot className={`w-12 h-12 mx-auto mb-4 ${
-                    isDark ? 'text-slate-400' : 'text-slate-500'
-                  }`} />
-                  <p className={`font-semibold mb-2 ${
-                    isDark ? 'text-white' : 'text-slate-900'
-                  }`}>
-                    No Models Available
-                  </p>
-                  <p className={`text-sm ${
-                    isDark ? 'text-slate-400' : 'text-slate-600'
-                  }`}>
-                    Install models with: ollama pull llama2
-                  </p>
-                </div>
-              )}
+                      <div className="ml-2">
+                        {model.requiresKey && !model.isAvailable ? (
+                          <Key className="w-4 h-4 text-yellow-400" />
+                        ) : model.isAvailable ? (
+                          <CheckCircle className="w-4 h-4 text-green-400" />
+                        ) : (
+                          <XCircle className="w-4 h-4 text-red-400" />
+                        )}
+                      </div>
+                    </div>
+                  </motion.button>
+                ))}
+              </div>
             </div>
 
             {/* Chat Sessions */}
@@ -552,12 +563,12 @@ const ChatPage: React.FC = () => {
                     <h3 className={`font-semibold transition-colors ${
                       isDark ? 'text-white' : 'text-slate-900'
                     }`}>
-                      {selectedModel || 'No Model Selected'}
+                      {availableModels.find(m => m.id === selectedModel)?.name || 'No Model Selected'}
                     </h3>
                     <p className={`text-sm transition-colors ${
                       isDark ? 'text-slate-400' : 'text-slate-600'
                     }`}>
-                      Ollama Local AI
+                      {availableModels.find(m => m.id === selectedModel)?.provider || 'Unknown Provider'}
                     </p>
                   </div>
                 </div>
@@ -628,7 +639,7 @@ const ChatPage: React.FC = () => {
                       <p className={`transition-colors ${
                         isDark ? 'text-slate-400' : 'text-slate-600'
                       }`}>
-                        Ask questions, seek insights, or discuss research topics with your local Ollama models
+                        Ask questions, seek insights, or discuss research topics with AI models
                       </p>
                     </div>
                   </div>
@@ -683,12 +694,12 @@ const ChatPage: React.FC = () => {
                               {message.content}
                             </p>
                             
-                            {message.model && (
+                            {(message.model || message.provider) && (
                               <div className="flex items-center justify-between mt-3 pt-3 border-t border-white/10">
                                 <span className={`text-xs font-medium transition-colors ${
                                   isDark ? 'text-slate-400' : 'text-slate-600'
                                 }`}>
-                                  {message.model}
+                                  {message.provider} - {message.model}
                                 </span>
                                 <div className="flex items-center space-x-2 opacity-0 group-hover:opacity-100 transition-opacity">
                                   <button
@@ -756,16 +767,15 @@ const ChatPage: React.FC = () => {
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder={ollamaConnected ? "Ask your local AI anything..." : "Start Ollama to begin chatting..."}
-                    disabled={!ollamaConnected}
-                    className={`flex-1 p-4 rounded-2xl backdrop-blur-sm border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-glow-purple disabled:opacity-50 ${
+                    placeholder="Ask your AI assistant anything..."
+                    className={`flex-1 p-4 rounded-2xl backdrop-blur-sm border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-glow-purple ${
                       isDark
                         ? 'bg-white/5 border-white/10 text-white placeholder-slate-400'
                         : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-500'
                     }`}
                   />
                   
-                  {recognitionRef.current && ollamaConnected && (
+                  {recognitionRef.current && (
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -786,7 +796,7 @@ const ChatPage: React.FC = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleSendMessage}
-                    disabled={!inputMessage.trim() || isTyping || !ollamaConnected}
+                    disabled={!inputMessage.trim() || isTyping}
                     className="bg-gradient-to-r from-glow-purple to-glow-pink text-white p-4 rounded-2xl shadow-glow hover:shadow-glow-lg transition-all duration-300 disabled:opacity-50"
                   >
                     <Send className="w-5 h-5" />

@@ -1,11 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Shield, Sun, Moon, TrendingUp, Brain, Zap, Compass, Settings } from 'lucide-react';
+import { Shield, Sun, Moon, TrendingUp, Brain, Zap, Compass, Settings, Key } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
+import { useApiKeys } from '../contexts/ApiKeyContext';
 
 const Navigation: React.FC = () => {
   const { isDark, toggleTheme } = useTheme();
+  const { hasValidKey } = useApiKeys();
   const location = useLocation();
 
   const navItems = [
@@ -15,6 +17,9 @@ const Navigation: React.FC = () => {
     { path: '/insight-engine', name: 'Insight Engine', icon: Brain },
     { path: '/chat', name: 'Chat', icon: Zap },
   ];
+
+  // Check if any API keys are configured
+  const hasAnyApiKey = hasValidKey('openai') || hasValidKey('claude') || hasValidKey('mistral') || hasValidKey('cohere');
 
   return (
     <motion.nav
@@ -49,7 +54,7 @@ const Navigation: React.FC = () => {
               <p className={`text-sm font-medium transition-colors ${
                 isDark ? 'text-glow-purple' : 'text-purple-600'
               }`}>
-                Ollama-Powered Intelligence
+                Multi-Model Intelligence
               </p>
             </div>
           </Link>
@@ -85,6 +90,19 @@ const Navigation: React.FC = () => {
 
           {/* Controls */}
           <div className="flex items-center space-x-3">
+            {/* API Key Status Indicator */}
+            <div className={`p-2 rounded-xl transition-all duration-300 ${
+              hasAnyApiKey
+                ? isDark
+                  ? 'bg-green-500/20 text-green-400'
+                  : 'bg-green-100 text-green-600'
+                : isDark
+                  ? 'bg-yellow-500/20 text-yellow-400'
+                  : 'bg-yellow-100 text-yellow-600'
+            }`}>
+              <Key className="w-4 h-4" />
+            </div>
+
             {/* Settings Button */}
             <Link to="/settings">
               <motion.button
