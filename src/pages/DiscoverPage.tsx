@@ -15,95 +15,202 @@ import {
   Target,
   ArrowRight,
   Calendar,
-  Tag
+  Tag,
+  Play,
+  BookOpen,
+  Timeline,
+  Layers,
+  RefreshCw,
+  ChevronLeft,
+  ChevronRight,
+  X
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabase';
+import { searchNews, searchTrendingTopics, searchSearXNG } from '../services/api/searxng.js';
+import { generateSmartSummary, generateEventTimeline } from '../services/api/summarization.js';
 
 interface Article {
   id: string;
   title: string;
-  content: string;
+  description: string;
   url: string;
-  image_url: string | null;
-  sector: string;
-  published_at: string;
-  created_at: string;
-  source?: string;
-  ai_summary?: string;
-  tags?: string[];
-  related_articles?: string[];
-  trust_score?: number;
+  urlToImage: string | null;
+  publishedDate: string;
+  source: string;
+  category: string;
+  thumbnail?: string;
+  summary?: any;
+  timeline?: any;
+}
+
+interface NewsSection {
+  title: string;
+  category: string;
+  articles: Article[];
+  icon: React.ComponentType<any>;
+  color: string;
 }
 
 const DiscoverPage: React.FC = () => {
   const { isDark } = useTheme();
-  const [articles, setArticles] = useState<Article[]>([]);
+  const [newsSections, setNewsSections] = useState<NewsSection[]>([]);
+  const [trendingTopics, setTrendingTopics] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
-  const [selectedFilter, setSelectedFilter] = useState('trending');
   const [searchQuery, setSearchQuery] = useState('');
-  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+  const [selectedArticle, setSelectedArticle] = useState<Article | null>(null);
+  const [showSummaryModal, setShowSummaryModal] = useState(false);
+  const [showTimelineModal, setShowTimelineModal] = useState(false);
+  const [loadingSummary, setLoadingSummary] = useState(false);
+  const [loadingTimeline, setLoadingTimeline] = useState(false);
 
-  const filters = [
-    { id: 'trending', name: 'Trending', icon: TrendingUp },
-    { id: 'latest', name: 'Latest', icon: Clock },
-    { id: 'verified', name: 'Verified', icon: Eye },
-    { id: 'global', name: 'Global', icon: Globe },
-  ];
-
-  const popularTags = [
-    'AI', 'Technology', 'Politics', 'Health', 'Climate', 'Business', 
-    'Science', 'Security', 'Innovation', 'Research'
+  const categories = [
+    { id: 'trending', name: 'Trending Now', icon: TrendingUp, color: 'from-red-500 to-orange-500' },
+    { id: 'technology', name: 'Technology', icon: Zap, color: 'from-blue-500 to-cyan-500' },
+    { id: 'health', name: 'Health', icon: Brain, color: 'from-green-500 to-emerald-500' },
+    { id: 'politics', name: 'Politics', icon: Target, color: 'from-purple-500 to-pink-500' },
+    { id: 'climate', name: 'Climate', icon: Globe, color: 'from-teal-500 to-blue-500' },
+    { id: 'business', name: 'Business', icon: TrendingUp, color: 'from-yellow-500 to-orange-500' },
+    { id: 'science', name: 'Science', icon: BookOpen, color: 'from-indigo-500 to-purple-500' }
   ];
 
   useEffect(() => {
-    loadArticles();
-  }, [selectedFilter]);
+    loadDiscoverContent();
+  }, []);
 
-  const loadArticles = async () => {
+  const loadDiscoverContent = async () => {
     setLoading(true);
     try {
-      let query = supabase
-        .from('articles')
-        .select('*')
-        .limit(20);
+      // Load trending topics first
+      const trending = await searchTrendingTopics();
+      setTrendingTopics(trending.trending || []);
 
-      switch (selectedFilter) {
-        case 'trending':
-          query = query.order('created_at', { ascending: false });
-          break;
-        case 'latest':
-          query = query.order('published_at', { ascending: false });
-          break;
-        case 'verified':
-          // Would filter by verification status in real implementation
-          query = query.order('created_at', { ascending: false });
-          break;
-        case 'global':
-          query = query.order('created_at', { ascending: false });
-          break;
-      }
+      // Load news for each category
+      const sectionsData = await Promise.all(
+        categories.map(async (category) => {
+          try {
+            let articles = [];
+            
+            if (category.id === 'trending') {
+              // Aggregate trending articles from all topics
+              const trendingArticles = trending.trending?.flatMap(t => 
+                t.results.map(r => ({
+                  id: Math.random().toString(36).substr(2, 9),
+                  title: r.title,
+                  description: r.content || r.title,
+                  url: r.url,
+                  urlToImage: r.img_src || 'https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg?auto=compress&cs=tinysrgb&w=400',
+                  publishedDate: r.publishedDate || new Date().toISOString(),
+                  source: extractDomain(r.url),
+                  category: 'trending'
+                }))
+              ) || [];
+              articles = trendingArticles.slice(0, 10);
+            } else {
+              // Search for category-specific news
+              const newsData = await searchNews(`latest ${category.name} news`, 'day');
+              articles = newsData.articles.slice(0, 8);
+            }
 
-      const { data, error } = await query;
-      if (error) throw error;
+            return {
+              title: category.name,
+              category: category.id,
+              articles,
+              icon: category.icon,
+              color: category.color
+            };
+          } catch (error) {
+            console.warn(`Failed to load ${category.name} news:`, error);
+            return {
+              title: category.name,
+              category: category.id,
+              articles: generateMockArticles(category.id, 6),
+              icon: category.icon,
+              color: category.color
+            };
+          }
+        })
+      );
 
-      // Enhance articles with mock data
-      const enhancedArticles = (data || []).map(article => ({
-        ...article,
-        source: extractDomain(article.url),
-        ai_summary: generateAISummary(article.content),
-        tags: generateTags(article.sector, article.title),
-        trust_score: Math.floor(Math.random() * 30) + 70,
-        related_articles: []
-      }));
-
-      setArticles(enhancedArticles);
+      setNewsSections(sectionsData);
     } catch (error) {
-      console.error('Error loading articles:', error);
-      // Load mock data on error
-      setArticles(generateMockArticles());
+      console.error('Error loading discover content:', error);
+      // Load mock data as fallback
+      setNewsSections(categories.map(cat => ({
+        title: cat.name,
+        category: cat.id,
+        articles: generateMockArticles(cat.id, 6),
+        icon: cat.icon,
+        color: cat.color
+      })));
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleSearch = async () => {
+    if (!searchQuery.trim()) return;
+
+    setLoading(true);
+    try {
+      const searchResults = await searchSearXNG(searchQuery, ['news', 'general']);
+      
+      const searchArticles = searchResults.results.map(result => ({
+        id: Math.random().toString(36).substr(2, 9),
+        title: result.title,
+        description: result.content || result.title,
+        url: result.url,
+        urlToImage: result.img_src || 'https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg?auto=compress&cs=tinysrgb&w=400',
+        publishedDate: result.publishedDate || new Date().toISOString(),
+        source: extractDomain(result.url),
+        category: 'search'
+      }));
+
+      // Add search results as a new section
+      setNewsSections(prev => [
+        {
+          title: `Search: "${searchQuery}"`,
+          category: 'search',
+          articles: searchArticles.slice(0, 12),
+          icon: Search,
+          color: 'from-glow-purple to-glow-pink'
+        },
+        ...prev.filter(section => section.category !== 'search')
+      ]);
+    } catch (error) {
+      console.error('Search error:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleArticleClick = async (article: Article) => {
+    setSelectedArticle(article);
+    setShowSummaryModal(true);
+    setLoadingSummary(true);
+
+    try {
+      const summary = await generateSmartSummary(article);
+      setSelectedArticle(prev => prev ? { ...prev, summary } : null);
+    } catch (error) {
+      console.error('Summary generation error:', error);
+    } finally {
+      setLoadingSummary(false);
+    }
+  };
+
+  const handleTimelineClick = async (article: Article) => {
+    setSelectedArticle(article);
+    setShowTimelineModal(true);
+    setLoadingTimeline(true);
+
+    try {
+      const timeline = await generateEventTimeline(article.title);
+      setSelectedArticle(prev => prev ? { ...prev, timeline } : null);
+    } catch (error) {
+      console.error('Timeline generation error:', error);
+    } finally {
+      setLoadingTimeline(false);
     }
   };
 
@@ -115,76 +222,26 @@ const DiscoverPage: React.FC = () => {
     }
   };
 
-  const generateAISummary = (content: string): string => {
-    const summaries = [
-      "AI analysis reveals key insights about emerging trends and their potential impact on global markets.",
-      "Advanced verification confirms authenticity while highlighting important contextual factors.",
-      "Strategic intelligence indicates significant developments with high confidence levels.",
-      "Comprehensive analysis shows strong correlation with verified data sources and expert opinions."
-    ];
-    return summaries[Math.floor(Math.random() * summaries.length)];
-  };
-
-  const generateTags = (sector: string, title: string): string[] => {
-    const baseTags = [sector.charAt(0).toUpperCase() + sector.slice(1)];
-    const additionalTags = popularTags.filter(() => Math.random() > 0.7).slice(0, 3);
-    return [...baseTags, ...additionalTags];
-  };
-
-  const generateMockArticles = (): Article[] => {
-    return [
-      {
-        id: '1',
-        title: 'AI-Powered Verification Systems Reach New Milestone in Accuracy',
-        content: 'Advanced artificial intelligence systems for media verification have achieved unprecedented accuracy rates...',
-        url: 'https://example.com/ai-verification',
-        image_url: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=800',
-        sector: 'technology',
-        published_at: new Date(Date.now() - 3600000).toISOString(),
-        created_at: new Date(Date.now() - 3600000).toISOString(),
-        source: 'TechNews',
-        ai_summary: 'Breakthrough in AI verification technology shows 99.2% accuracy in detecting manipulated media content.',
-        tags: ['AI', 'Technology', 'Verification'],
-        trust_score: 92
-      },
-      {
-        id: '2',
-        title: 'Global Climate Summit Announces Revolutionary Carbon Capture Initiative',
-        content: 'World leaders unveil ambitious new carbon capture technology that could transform climate action...',
-        url: 'https://example.com/climate-summit',
-        image_url: 'https://images.pexels.com/photos/9324336/pexels-photo-9324336.jpeg?auto=compress&cs=tinysrgb&w=800',
-        sector: 'climate',
-        published_at: new Date(Date.now() - 7200000).toISOString(),
-        created_at: new Date(Date.now() - 7200000).toISOString(),
-        source: 'Climate Today',
-        ai_summary: 'Major breakthrough in carbon capture technology promises to accelerate global decarbonization efforts.',
-        tags: ['Climate', 'Innovation', 'Global'],
-        trust_score: 88
-      }
-    ];
-  };
-
-  const filteredArticles = articles.filter(article => {
-    const matchesSearch = article.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-                         article.content.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesTags = selectedTags.length === 0 || 
-                       selectedTags.some(tag => article.tags?.includes(tag));
-    return matchesSearch && matchesTags;
-  });
-
-  const toggleTag = (tag: string) => {
-    setSelectedTags(prev => 
-      prev.includes(tag) 
-        ? prev.filter(t => t !== tag)
-        : [...prev, tag]
-    );
+  const generateMockArticles = (category: string, count: number): Article[] => {
+    const articles = [];
+    for (let i = 0; i < count; i++) {
+      articles.push({
+        id: Math.random().toString(36).substr(2, 9),
+        title: `${category.charAt(0).toUpperCase() + category.slice(1)} Development: Real-time Analysis ${i + 1}`,
+        description: `Latest developments in ${category} sector with comprehensive analysis and expert insights from multiple verified sources.`,
+        url: `https://example.com/${category}/${i}`,
+        urlToImage: 'https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg?auto=compress&cs=tinysrgb&w=400',
+        publishedDate: new Date(Date.now() - Math.random() * 86400000).toISOString(),
+        source: 'Intelligence Network',
+        category
+      });
+    }
+    return articles;
   };
 
   return (
     <div className={`min-h-screen pt-20 transition-colors duration-300 ${
-      isDark 
-        ? 'bg-black' 
-        : 'bg-white'
+      isDark ? 'bg-black' : 'bg-white'
     }`}>
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Header */}
@@ -199,7 +256,7 @@ const DiscoverPage: React.FC = () => {
               : 'bg-slate-100 border-slate-200 text-purple-700'
           }`}>
             <Sparkles className="w-5 h-5" />
-            <span className="font-semibold">Live Intelligence Discovery</span>
+            <span className="font-semibold">Real-time Intelligence Discovery</span>
           </div>
           
           <h1 className={`text-6xl font-bold font-display mb-4 transition-colors ${
@@ -210,97 +267,61 @@ const DiscoverPage: React.FC = () => {
           <p className={`text-xl max-w-3xl mx-auto font-body transition-colors ${
             isDark ? 'text-slate-300' : 'text-slate-600'
           }`}>
-            Explore trending articles, verified intelligence, and AI-powered insights from across the global information landscape
+            Deep browsing with smart summaries, real-time web scraping, and multi-source intelligence aggregation
           </p>
         </motion.div>
 
-        {/* Filters and Search */}
+        {/* Search Bar */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
           className="mb-8"
         >
-          <div className="flex flex-col lg:flex-row gap-6 mb-6">
-            {/* Search */}
-            <div className="flex-1">
-              <div className="relative">
-                <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors ${
-                  isDark ? 'text-slate-400' : 'text-slate-500'
-                }`} />
-                <input
-                  type="text"
-                  placeholder="Search the intelligence network..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className={`w-full pl-12 pr-4 py-4 rounded-2xl backdrop-blur-sm border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-glow-purple ${
-                    isDark
-                      ? 'bg-white/5 border-white/10 text-white placeholder-slate-400'
-                      : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-500'
-                  }`}
-                />
-              </div>
+          <div className="flex gap-4">
+            <div className="flex-1 relative">
+              <Search className={`absolute left-4 top-1/2 transform -translate-y-1/2 w-5 h-5 transition-colors ${
+                isDark ? 'text-slate-400' : 'text-slate-500'
+              }`} />
+              <input
+                type="text"
+                placeholder="Search global intelligence network..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                className={`w-full pl-12 pr-4 py-4 rounded-2xl backdrop-blur-sm border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-glow-purple ${
+                  isDark
+                    ? 'bg-white/5 border-white/10 text-white placeholder-slate-400'
+                    : 'bg-slate-50 border-slate-200 text-slate-900 placeholder-slate-500'
+                }`}
+              />
             </div>
-
-            {/* Filter Buttons */}
-            <div className="flex items-center space-x-2">
-              {filters.map((filter) => {
-                const Icon = filter.icon;
-                const isActive = selectedFilter === filter.id;
-                
-                return (
-                  <motion.button
-                    key={filter.id}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setSelectedFilter(filter.id)}
-                    className={`px-6 py-3 rounded-2xl font-semibold transition-all duration-300 flex items-center space-x-2 ${
-                      isActive
-                        ? isDark
-                          ? 'bg-glow-purple text-white shadow-glow'
-                          : 'bg-purple-600 text-white shadow-lg'
-                        : isDark
-                          ? 'bg-white/5 border border-white/10 text-slate-300 hover:bg-white/10'
-                          : 'bg-slate-100 border border-slate-200 text-slate-600 hover:bg-slate-200'
-                    }`}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span>{filter.name}</span>
-                  </motion.button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Tags */}
-          <div className="flex flex-wrap gap-2">
-            {popularTags.map((tag) => {
-              const isSelected = selectedTags.includes(tag);
-              return (
-                <motion.button
-                  key={tag}
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() => toggleTag(tag)}
-                  className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-300 ${
-                    isSelected
-                      ? isDark
-                        ? 'bg-glow-purple/20 text-glow-purple border border-glow-purple/30'
-                        : 'bg-purple-100 text-purple-700 border border-purple-200'
-                      : isDark
-                        ? 'bg-white/5 text-slate-400 border border-white/10 hover:bg-white/10'
-                        : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'
-                  }`}
-                >
-                  <Tag className="w-3 h-3 inline mr-1" />
-                  {tag}
-                </motion.button>
-              );
-            })}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={handleSearch}
+              disabled={loading}
+              className="bg-gradient-to-r from-glow-purple to-glow-pink text-white px-8 py-4 rounded-2xl font-bold shadow-glow hover:shadow-glow-lg transition-all duration-300 disabled:opacity-50"
+            >
+              <Search className="w-5 h-5" />
+            </motion.button>
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={loadDiscoverContent}
+              disabled={loading}
+              className={`p-4 rounded-2xl transition-all duration-300 ${
+                isDark
+                  ? 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+                  : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
+              }`}
+            >
+              <RefreshCw className={`w-5 h-5 ${loading ? 'animate-spin' : ''}`} />
+            </motion.button>
           </div>
         </motion.div>
 
-        {/* Articles Grid */}
+        {/* News Sections */}
         {loading ? (
           <motion.div
             initial={{ opacity: 0 }}
@@ -317,159 +338,434 @@ const DiscoverPage: React.FC = () => {
               <p className={`transition-colors ${
                 isDark ? 'text-slate-400' : 'text-slate-600'
               }`}>
-                Analyzing global information streams
+                Scraping real-time sources and generating smart summaries
               </p>
             </div>
           </motion.div>
         ) : (
+          <div className="space-y-12">
+            {newsSections.map((section, sectionIndex) => {
+              const Icon = section.icon;
+              return (
+                <motion.div
+                  key={section.category}
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: sectionIndex * 0.1 }}
+                  className="space-y-6"
+                >
+                  {/* Section Header */}
+                  <div className="flex items-center space-x-4">
+                    <div className={`p-3 rounded-2xl bg-gradient-to-r ${section.color} shadow-lg`}>
+                      <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    <div>
+                      <h2 className={`text-2xl font-bold font-display transition-colors ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}>
+                        {section.title}
+                      </h2>
+                      <p className={`text-sm transition-colors ${
+                        isDark ? 'text-slate-400' : 'text-slate-600'
+                      }`}>
+                        {section.articles.length} articles • Real-time updates
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Horizontal Scrollable Articles */}
+                  <div className="overflow-x-auto pb-4">
+                    <div className="flex space-x-6" style={{ width: 'max-content' }}>
+                      {section.articles.map((article, index) => (
+                        <motion.div
+                          key={article.id}
+                          initial={{ opacity: 0, x: 20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
+                          whileHover={{ y: -5, scale: 1.02 }}
+                          className={`w-80 backdrop-blur-sm border rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-500 cursor-pointer group ${
+                            isDark
+                              ? 'bg-white/5 border-white/10 hover:bg-white/10'
+                              : 'bg-white border-slate-200 hover:bg-slate-50'
+                          }`}
+                          onClick={() => handleArticleClick(article)}
+                        >
+                          {/* Article Image */}
+                          <div className="relative mb-4">
+                            <img
+                              src={article.urlToImage || 'https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg?auto=compress&cs=tinysrgb&w=400'}
+                              alt={article.title}
+                              className="w-full h-40 object-cover rounded-2xl"
+                              onError={(e) => {
+                                e.currentTarget.src = 'https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg?auto=compress&cs=tinysrgb&w=400';
+                              }}
+                            />
+                            <div className="absolute top-3 right-3">
+                              <div className="bg-black/50 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-semibold">
+                                LIVE
+                              </div>
+                            </div>
+                          </div>
+
+                          {/* Article Content */}
+                          <div className="space-y-3">
+                            <h3 className={`font-bold text-lg leading-tight line-clamp-2 transition-colors group-hover:text-glow-purple ${
+                              isDark ? 'text-white' : 'text-slate-900'
+                            }`}>
+                              {article.title}
+                            </h3>
+
+                            <p className={`text-sm leading-relaxed line-clamp-3 transition-colors ${
+                              isDark ? 'text-slate-300' : 'text-slate-600'
+                            }`}>
+                              {article.description}
+                            </p>
+
+                            {/* Meta Info */}
+                            <div className="flex items-center justify-between text-xs">
+                              <div className="flex items-center space-x-2">
+                                <Calendar className="w-3 h-3 text-glow-purple" />
+                                <span className={`transition-colors ${
+                                  isDark ? 'text-slate-400' : 'text-slate-600'
+                                }`}>
+                                  {new Date(article.publishedDate).toLocaleDateString()}
+                                </span>
+                              </div>
+                              <span className={`font-medium transition-colors ${
+                                isDark ? 'text-glow-purple' : 'text-purple-600'
+                              }`}>
+                                {article.source}
+                              </span>
+                            </div>
+
+                            {/* Action Buttons */}
+                            <div className="flex space-x-2 pt-2">
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleArticleClick(article);
+                                }}
+                                className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-300 flex items-center justify-center space-x-1 ${
+                                  isDark
+                                    ? 'bg-glow-purple/10 border border-glow-purple/20 text-glow-purple hover:bg-glow-purple/20'
+                                    : 'bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100'
+                                }`}
+                              >
+                                <Brain className="w-3 h-3" />
+                                <span>Smart Summary</span>
+                              </motion.button>
+
+                              <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleTimelineClick(article);
+                                }}
+                                className={`flex-1 px-3 py-2 rounded-xl text-xs font-semibold transition-all duration-300 flex items-center justify-center space-x-1 ${
+                                  isDark
+                                    ? 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+                                    : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
+                                }`}
+                              >
+                                <Timeline className="w-3 h-3" />
+                                <span>Timeline</span>
+                              </motion.button>
+                            </div>
+                          </div>
+                        </motion.div>
+                      ))}
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Smart Summary Modal */}
+        {showSummaryModal && selectedArticle && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            transition={{ delay: 0.2 }}
-            className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-12"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowSummaryModal(false)}
           >
-            {filteredArticles.map((article, index) => (
-              <motion.div
-                key={article.id}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                whileHover={{ y: -5, scale: 1.02 }}
-                className={`backdrop-blur-sm border rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-500 group ${
-                  isDark
-                    ? 'bg-white/5 border-white/10 hover:bg-white/10 hover:shadow-glow'
-                    : 'bg-white border-slate-200 hover:bg-slate-50 hover:shadow-xl'
-                }`}
-              >
-                {/* Article Image */}
-                {article.image_url && (
-                  <div className="relative mb-6">
-                    <img
-                      src={article.image_url}
-                      alt={article.title}
-                      className="w-full h-48 object-cover rounded-2xl"
-                      onError={(e) => {
-                        e.currentTarget.src = 'https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg?auto=compress&cs=tinysrgb&w=400&h=250&fit=crop';
-                      }}
-                    />
-                    <div className="absolute top-4 right-4">
-                      <div className={`px-3 py-1 rounded-full text-xs font-bold backdrop-blur-sm ${
-                        article.trust_score && article.trust_score >= 90
-                          ? 'bg-green-500/20 text-green-400 border border-green-500/30'
-                          : article.trust_score && article.trust_score >= 70
-                            ? 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30'
-                            : 'bg-red-500/20 text-red-400 border border-red-500/30'
-                      }`}>
-                        {article.trust_score}% Trust
-                      </div>
-                    </div>
-                  </div>
-                )}
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+            
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`relative w-full max-w-4xl max-h-[90vh] overflow-y-auto backdrop-blur-sm border rounded-3xl p-8 shadow-xl ${
+                isDark
+                  ? 'bg-black/90 border-white/10'
+                  : 'bg-white/90 border-slate-200'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className={`text-2xl font-bold transition-colors ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}>
+                  Smart Summary
+                </h2>
+                <button
+                  onClick={() => setShowSummaryModal(false)}
+                  className={`p-2 rounded-xl transition-colors ${
+                    isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
 
-                {/* Article Content */}
-                <div className="space-y-4">
-                  {/* Meta Info */}
-                  <div className="flex items-center justify-between text-sm">
-                    <div className="flex items-center space-x-2">
-                      <Calendar className="w-4 h-4 text-glow-purple" />
-                      <span className={`transition-colors ${
-                        isDark ? 'text-slate-400' : 'text-slate-600'
-                      }`}>
-                        {new Date(article.published_at).toLocaleDateString()}
-                      </span>
-                    </div>
-                    <span className={`font-medium transition-colors ${
-                      isDark ? 'text-glow-purple' : 'text-purple-600'
-                    }`}>
-                      {article.source}
-                    </span>
-                  </div>
-
-                  {/* Title */}
-                  <h3 className={`font-bold text-lg leading-tight line-clamp-2 transition-colors group-hover:text-glow-purple ${
+              {loadingSummary ? (
+                <div className="text-center py-12">
+                  <Brain className="w-12 h-12 text-glow-purple mx-auto mb-4 animate-pulse" />
+                  <p className={`text-lg font-semibold transition-colors ${
                     isDark ? 'text-white' : 'text-slate-900'
                   }`}>
-                    {article.title}
-                  </h3>
-
-                  {/* AI Summary */}
-                  <div className={`p-4 rounded-2xl backdrop-blur-sm border ${
+                    Generating Smart Summary...
+                  </p>
+                  <p className={`text-sm transition-colors ${
+                    isDark ? 'text-slate-400' : 'text-slate-600'
+                  }`}>
+                    Analyzing multiple sources with AI
+                  </p>
+                </div>
+              ) : selectedArticle.summary ? (
+                <div className="space-y-6">
+                  {/* TL;DR */}
+                  <div className={`p-6 rounded-2xl border ${
                     isDark
                       ? 'bg-glow-purple/10 border-glow-purple/20'
                       : 'bg-purple-50 border-purple-200'
                   }`}>
-                    <div className="flex items-center space-x-2 mb-2">
-                      <Brain className="w-4 h-4 text-glow-purple" />
-                      <span className={`text-sm font-semibold transition-colors ${
-                        isDark ? 'text-white' : 'text-slate-900'
-                      }`}>
-                        AI Summary
-                      </span>
-                    </div>
-                    <p className={`text-sm leading-relaxed transition-colors ${
+                    <h3 className={`font-bold mb-3 transition-colors ${
+                      isDark ? 'text-white' : 'text-slate-900'
+                    }`}>
+                      TL;DR
+                    </h3>
+                    <p className={`leading-relaxed transition-colors ${
                       isDark ? 'text-slate-300' : 'text-slate-700'
                     }`}>
-                      {article.ai_summary}
+                      {selectedArticle.summary.tldr}
                     </p>
                   </div>
 
-                  {/* Tags */}
-                  <div className="flex flex-wrap gap-2">
-                    {article.tags?.map((tag) => (
-                      <span
-                        key={tag}
-                        className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          isDark
-                            ? 'bg-white/10 text-slate-300'
-                            : 'bg-slate-100 text-slate-600'
-                        }`}
-                      >
-                        {tag}
-                      </span>
-                    ))}
+                  {/* Key Points */}
+                  <div>
+                    <h3 className={`font-bold mb-3 transition-colors ${
+                      isDark ? 'text-white' : 'text-slate-900'
+                    }`}>
+                      Key Points
+                    </h3>
+                    <ul className="space-y-2">
+                      {selectedArticle.summary.keyPoints.map((point: string, index: number) => (
+                        <li
+                          key={index}
+                          className={`flex items-start space-x-2 transition-colors ${
+                            isDark ? 'text-slate-300' : 'text-slate-700'
+                          }`}
+                        >
+                          <span className="text-glow-purple mt-1">•</span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
                   </div>
 
-                  {/* Action Button */}
-                  <motion.a
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    href={article.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className={`w-full backdrop-blur-sm border text-sm py-3 rounded-2xl transition-all duration-300 flex items-center justify-center space-x-2 font-semibold ${
-                      isDark
-                        ? 'bg-glow-purple/10 border-glow-purple/20 text-glow-purple hover:bg-glow-purple/20'
-                        : 'bg-purple-50 border-purple-200 text-purple-700 hover:bg-purple-100'
-                    }`}
-                  >
-                    <span>Explore Intelligence</span>
-                    <ArrowRight className="w-4 h-4" />
-                  </motion.a>
+                  {/* Context & Implications */}
+                  <div className="grid md:grid-cols-2 gap-6">
+                    <div>
+                      <h3 className={`font-bold mb-3 transition-colors ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}>
+                        Context
+                      </h3>
+                      <p className={`text-sm leading-relaxed transition-colors ${
+                        isDark ? 'text-slate-300' : 'text-slate-700'
+                      }`}>
+                        {selectedArticle.summary.context}
+                      </p>
+                    </div>
+                    <div>
+                      <h3 className={`font-bold mb-3 transition-colors ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}>
+                        Implications
+                      </h3>
+                      <p className={`text-sm leading-relaxed transition-colors ${
+                        isDark ? 'text-slate-300' : 'text-slate-700'
+                      }`}>
+                        {selectedArticle.summary.implications}
+                      </p>
+                    </div>
+                  </div>
+
+                  {/* Trust Score & Related Topics */}
+                  <div className="flex items-center justify-between">
+                    <div className={`px-4 py-2 rounded-full text-sm font-semibold ${
+                      selectedArticle.summary.trustScore >= 90
+                        ? 'bg-green-500/20 text-green-400'
+                        : selectedArticle.summary.trustScore >= 70
+                          ? 'bg-yellow-500/20 text-yellow-400'
+                          : 'bg-red-500/20 text-red-400'
+                    }`}>
+                      Trust Score: {selectedArticle.summary.trustScore}%
+                    </div>
+                    <a
+                      href={selectedArticle.url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 flex items-center space-x-2 ${
+                        isDark
+                          ? 'bg-white/10 border border-white/20 text-white hover:bg-white/20'
+                          : 'bg-slate-100 border border-slate-200 text-slate-700 hover:bg-slate-200'
+                      }`}
+                    >
+                      <span>Read Original</span>
+                      <ExternalLink className="w-4 h-4" />
+                    </a>
+                  </div>
                 </div>
-              </motion.div>
-            ))}
+              ) : (
+                <div className="text-center py-12">
+                  <p className={`text-lg transition-colors ${
+                    isDark ? 'text-white' : 'text-slate-900'
+                  }`}>
+                    Failed to generate summary
+                  </p>
+                </div>
+              )}
+            </motion.div>
           </motion.div>
         )}
 
-        {filteredArticles.length === 0 && !loading && (
+        {/* Timeline Modal */}
+        {showTimelineModal && selectedArticle && (
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-20"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            className="fixed inset-0 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowTimelineModal(false)}
           >
-            <Compass className={`w-16 h-16 mx-auto mb-4 transition-colors ${
-              isDark ? 'text-slate-400' : 'text-slate-500'
-            }`} />
-            <p className={`text-xl font-semibold mb-2 transition-colors ${
-              isDark ? 'text-white' : 'text-slate-900'
-            }`}>
-              No Intelligence Found
-            </p>
-            <p className={`transition-colors ${
-              isDark ? 'text-slate-400' : 'text-slate-600'
-            }`}>
-              Try adjusting your search or filters to discover more content
-            </p>
+            <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" />
+            
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              onClick={(e) => e.stopPropagation()}
+              className={`relative w-full max-w-4xl max-h-[90vh] overflow-y-auto backdrop-blur-sm border rounded-3xl p-8 shadow-xl ${
+                isDark
+                  ? 'bg-black/90 border-white/10'
+                  : 'bg-white/90 border-slate-200'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-6">
+                <h2 className={`text-2xl font-bold transition-colors ${
+                  isDark ? 'text-white' : 'text-slate-900'
+                }`}>
+                  Event Timeline
+                </h2>
+                <button
+                  onClick={() => setShowTimelineModal(false)}
+                  className={`p-2 rounded-xl transition-colors ${
+                    isDark ? 'hover:bg-white/10' : 'hover:bg-slate-100'
+                  }`}
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {loadingTimeline ? (
+                <div className="text-center py-12">
+                  <Timeline className="w-12 h-12 text-glow-purple mx-auto mb-4 animate-pulse" />
+                  <p className={`text-lg font-semibold transition-colors ${
+                    isDark ? 'text-white' : 'text-slate-900'
+                  }`}>
+                    Generating Timeline...
+                  </p>
+                  <p className={`text-sm transition-colors ${
+                    isDark ? 'text-slate-400' : 'text-slate-600'
+                  }`}>
+                    Analyzing chronological events
+                  </p>
+                </div>
+              ) : selectedArticle.timeline ? (
+                <div className="space-y-6">
+                  {/* Timeline Events */}
+                  <div className="space-y-4">
+                    {selectedArticle.timeline.events.map((event: any, index: number) => (
+                      <div key={index} className="flex space-x-4">
+                        <div className="flex flex-col items-center">
+                          <div className="w-3 h-3 bg-glow-purple rounded-full"></div>
+                          {index < selectedArticle.timeline.events.length - 1 && (
+                            <div className="w-px h-16 bg-glow-purple/30 mt-2"></div>
+                          )}
+                        </div>
+                        <div className="flex-1 pb-8">
+                          <div className="flex items-center space-x-2 mb-2">
+                            <span className={`text-sm font-medium transition-colors ${
+                              isDark ? 'text-glow-purple' : 'text-purple-600'
+                            }`}>
+                              {new Date(event.date).toLocaleDateString()}
+                            </span>
+                            <span className={`text-xs px-2 py-1 rounded-full ${
+                              isDark
+                                ? 'bg-white/10 text-slate-400'
+                                : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {event.source}
+                            </span>
+                          </div>
+                          <h4 className={`font-semibold mb-1 transition-colors ${
+                            isDark ? 'text-white' : 'text-slate-900'
+                          }`}>
+                            {event.title}
+                          </h4>
+                          <p className={`text-sm leading-relaxed transition-colors ${
+                            isDark ? 'text-slate-300' : 'text-slate-700'
+                          }`}>
+                            {event.description}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Timeline Analysis */}
+                  {selectedArticle.timeline.analysis && (
+                    <div className={`p-6 rounded-2xl border ${
+                      isDark
+                        ? 'bg-white/5 border-white/10'
+                        : 'bg-slate-50 border-slate-200'
+                    }`}>
+                      <h3 className={`font-bold mb-3 transition-colors ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}>
+                        AI Analysis
+                      </h3>
+                      <p className={`text-sm leading-relaxed transition-colors ${
+                        isDark ? 'text-slate-300' : 'text-slate-700'
+                      }`}>
+                        {selectedArticle.timeline.analysis.summary}
+                      </p>
+                    </div>
+                  )}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className={`text-lg transition-colors ${
+                    isDark ? 'text-white' : 'text-slate-900'
+                  }`}>
+                    Failed to generate timeline
+                  </p>
+                </div>
+              )}
+            </motion.div>
           </motion.div>
         )}
       </div>

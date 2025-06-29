@@ -6,6 +6,8 @@ import InsightEnginePage from './pages/InsightEnginePage';
 import DiscoverPage from './pages/DiscoverPage';
 import ChatPage from './pages/ChatPage';
 import ArticleDetailPage from './pages/ArticleDetailPage';
+import SummaryPage from './pages/SummaryPage';
+import EventTimelinePage from './pages/EventTimelinePage';
 import Navigation from './components/Navigation';
 import Footer from './components/Footer';
 import ThemeProvider from './contexts/ThemeContext';
@@ -26,6 +28,8 @@ function App() {
               <Route path="/discover" element={<DiscoverPage />} />
               <Route path="/chat" element={<ChatPage />} />
               <Route path="/article/:id" element={<ArticleDetailPage />} />
+              <Route path="/summary/:id" element={<SummaryPage />} />
+              <Route path="/event/:slug" element={<EventTimelinePage />} />
             </Routes>
           </main>
           <Footer />
