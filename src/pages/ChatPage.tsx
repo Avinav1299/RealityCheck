@@ -5,7 +5,6 @@ import {
   Bot, 
   User, 
   Brain, 
-  Zap, 
   Settings,
   MessageSquare,
   Sparkles,
@@ -18,14 +17,12 @@ import {
   VolumeX,
   History,
   Trash2,
-  Key,
-  AlertCircle
+  AlertCircle,
+  CheckCircle,
+  XCircle
 } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
-import { useApiKeys } from '../contexts/ApiKeyContext';
-import { aiService } from '../services/ai/aiService';
-import ModelSelector from '../components/ModelSelector';
-import ApiKeyManager from '../components/ApiKeyManager';
+import { ollamaService } from '../services/ai/ollamaService';
 
 interface Message {
   id: string;
@@ -44,9 +41,15 @@ interface ChatSession {
   lastUpdated: Date;
 }
 
+interface OllamaModel {
+  name: string;
+  model: string;
+  modified_at: string;
+  size: number;
+}
+
 const ChatPage: React.FC = () => {
   const { isDark } = useTheme();
-  const { selectedModel, availableModels, getActiveKey } = useApiKeys();
   const [messages, setMessages] = useState<Message[]>([]);
   const [inputMessage, setInputMessage] = useState('');
   const [isTyping, setIsTyping] = useState(false);
@@ -54,17 +57,15 @@ const ChatPage: React.FC = () => {
   const [currentSessionId, setCurrentSessionId] = useState<string | null>(null);
   const [isListening, setIsListening] = useState(false);
   const [speechEnabled, setSpeechEnabled] = useState(false);
-  const [showApiKeyManager, setShowApiKeyManager] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [ollamaConnected, setOllamaConnected] = useState(false);
+  const [availableModels, setAvailableModels] = useState<OllamaModel[]>([]);
+  const [selectedModel, setSelectedModel] = useState<string>('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const recognitionRef = useRef<any>(null);
 
-  // Set up AI service with API keys
   useEffect(() => {
-    aiService.setApiKeys({ getActiveKey });
-  }, [getActiveKey]);
-
-  useEffect(() => {
+    checkOllamaConnection();
     scrollToBottom();
   }, [messages]);
 
@@ -99,6 +100,27 @@ const ChatPage: React.FC = () => {
     }
   }, []);
 
+  const checkOllamaConnection = async () => {
+    try {
+      const connection = await ollamaService.checkConnection();
+      setOllamaConnected(connection.connected);
+      setAvailableModels(connection.models);
+      
+      if (connection.connected && connection.models.length > 0 && !selectedModel) {
+        setSelectedModel(connection.models[0].name);
+      }
+      
+      if (!connection.connected) {
+        setConnectionError('Ollama not detected. Please start Ollama on your local machine.');
+      } else {
+        setConnectionError(null);
+      }
+    } catch (error) {
+      setOllamaConnected(false);
+      setConnectionError('Failed to connect to Ollama. Make sure it\'s running on localhost:11434');
+    }
+  };
+
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
@@ -129,7 +151,11 @@ const ChatPage: React.FC = () => {
   const handleSendMessage = async () => {
     if (!inputMessage.trim()) return;
 
-    // Clear any previous connection errors
+    if (!ollamaConnected) {
+      setConnectionError('Ollama not connected. Please start Ollama and try again.');
+      return;
+    }
+
     setConnectionError(null);
 
     const userMessage: Message = {
@@ -145,8 +171,7 @@ const ChatPage: React.FC = () => {
     setIsTyping(true);
 
     try {
-      // Use AI service to get response
-      const response = await aiService.chat([
+      const response = await ollamaService.chat([
         { role: 'system', content: 'You are a helpful AI assistant specialized in research, analysis, and providing accurate information.' },
         ...newMessages.map(msg => ({
           role: msg.type === 'user' ? 'user' as const : 'assistant' as const,
@@ -160,14 +185,14 @@ const ChatPage: React.FC = () => {
         content: response.content,
         timestamp: new Date(),
         model: response.model,
-        error: response.model.includes('(mock)')
+        error: false
       };
 
       const updatedMessages = [...newMessages, aiResponse];
       setMessages(updatedMessages);
 
-      // Speak the response if enabled and it's not a mock response
-      if (!aiResponse.error) {
+      // Speak the response if enabled
+      if (speechEnabled) {
         speakMessage(aiResponse.content);
       }
 
@@ -176,12 +201,7 @@ const ChatPage: React.FC = () => {
         updateCurrentSession(updatedMessages);
       }
     } catch (error) {
-      console.error('AI response error:', error);
-      
-      // Set connection error for display
-      if (error instanceof Error) {
-        setConnectionError(error.message);
-      }
+      console.error('Ollama response error:', error);
       
       const errorMessage: Message = {
         id: (Date.now() + 1).toString(),
@@ -193,6 +213,7 @@ const ChatPage: React.FC = () => {
       };
 
       setMessages([...newMessages, errorMessage]);
+      setConnectionError(error instanceof Error ? error.message : 'Unknown error occurred');
     } finally {
       setIsTyping(false);
     }
@@ -277,9 +298,6 @@ const ChatPage: React.FC = () => {
     }
   };
 
-  const selectedModelData = availableModels.find(m => m.id === selectedModel);
-  const hasValidApiKey = selectedModelData?.isAvailable || false;
-
   return (
     <div className={`min-h-screen flex flex-col transition-colors duration-300 ${
       isDark ? 'bg-black' : 'bg-white'
@@ -298,7 +316,7 @@ const ChatPage: React.FC = () => {
                 : 'bg-slate-100 border-slate-200 text-purple-700'
             }`}>
               <Sparkles className="w-5 h-5" />
-              <span className="font-semibold">BYOK AI Consultation</span>
+              <span className="font-semibold">Ollama-Powered AI Chat</span>
             </div>
             
             <h1 className={`text-5xl font-bold font-display mb-2 transition-colors ${
@@ -309,39 +327,35 @@ const ChatPage: React.FC = () => {
             <p className={`text-lg font-body transition-colors ${
               isDark ? 'text-slate-300' : 'text-slate-600'
             }`}>
-              Engage with your own AI models for research, analysis, and strategic guidance
+              Chat with your local Ollama models for research, analysis, and strategic guidance
             </p>
 
-            {!hasValidApiKey && (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                className={`mt-4 p-4 rounded-2xl border ${
+            {/* Connection Status */}
+            <div className="mt-4">
+              {ollamaConnected ? (
+                <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full ${
                   isDark
-                    ? 'bg-yellow-500/10 border-yellow-500/20'
-                    : 'bg-yellow-50 border-yellow-200'
-                }`}
-              >
-                <div className="flex items-center justify-center space-x-3">
-                  <Key className="w-5 h-5 text-yellow-400" />
-                  <span className={`font-medium ${isDark ? 'text-yellow-300' : 'text-yellow-700'}`}>
-                    Configure your API keys to start chatting
+                    ? 'bg-green-500/10 border border-green-500/20'
+                    : 'bg-green-50 border border-green-200'
+                }`}>
+                  <CheckCircle className="w-4 h-4 text-green-400" />
+                  <span className="text-green-400 font-medium text-sm">
+                    Ollama Connected ({availableModels.length} models)
                   </span>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => setShowApiKeyManager(true)}
-                    className={`px-4 py-2 rounded-xl font-semibold transition-all duration-300 ${
-                      isDark
-                        ? 'bg-yellow-500/20 text-yellow-300 hover:bg-yellow-500/30'
-                        : 'bg-yellow-200 text-yellow-700 hover:bg-yellow-300'
-                    }`}
-                  >
-                    Add Keys
-                  </motion.button>
                 </div>
-              </motion.div>
-            )}
+              ) : (
+                <div className={`inline-flex items-center space-x-2 px-4 py-2 rounded-full ${
+                  isDark
+                    ? 'bg-red-500/10 border border-red-500/20'
+                    : 'bg-red-50 border border-red-200'
+                }`}>
+                  <XCircle className="w-4 h-4 text-red-400" />
+                  <span className="text-red-400 font-medium text-sm">
+                    Ollama Not Connected
+                  </span>
+                </div>
+              )}
+            </div>
 
             {connectionError && (
               <motion.div
@@ -358,6 +372,18 @@ const ChatPage: React.FC = () => {
                   <span className={`font-medium ${isDark ? 'text-red-300' : 'text-red-700'}`}>
                     {connectionError}
                   </span>
+                  <motion.button
+                    whileHover={{ scale: 1.05 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={checkOllamaConnection}
+                    className={`px-4 py-2 rounded-xl font-semibold transition-all duration-300 ${
+                      isDark
+                        ? 'bg-red-500/20 text-red-300 hover:bg-red-500/30'
+                        : 'bg-red-200 text-red-700 hover:bg-red-300'
+                    }`}
+                  >
+                    Retry
+                  </motion.button>
                 </div>
               </motion.div>
             )}
@@ -383,23 +409,53 @@ const ChatPage: React.FC = () => {
               <h2 className={`text-xl font-bold font-display mb-4 transition-colors ${
                 isDark ? 'text-white' : 'text-slate-900'
               }`}>
-                AI Model
+                Ollama Models
               </h2>
               
-              <ModelSelector onApiKeyManager={() => setShowApiKeyManager(true)} />
-
-              {selectedModelData && (
-                <div className="mt-4 p-4 rounded-2xl bg-white/5 border border-white/10">
-                  <p className={`text-sm leading-relaxed transition-colors ${
-                    isDark ? 'text-slate-300' : 'text-slate-700'
+              {ollamaConnected && availableModels.length > 0 ? (
+                <div className="space-y-3">
+                  {availableModels.map((model) => (
+                    <motion.button
+                      key={model.name}
+                      whileHover={{ scale: 1.02 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => setSelectedModel(model.name)}
+                      className={`w-full p-3 rounded-xl border transition-all duration-300 text-left ${
+                        selectedModel === model.name
+                          ? isDark
+                            ? 'bg-glow-purple/20 border-glow-purple/50 text-white'
+                            : 'bg-purple-100 border-purple-300 text-purple-900'
+                          : isDark
+                            ? 'bg-white/5 border-white/10 text-white hover:bg-white/10'
+                            : 'bg-slate-50 border-slate-200 text-slate-900 hover:bg-slate-100'
+                      }`}
+                    >
+                      <div className="font-semibold">{model.name}</div>
+                      <div className={`text-xs ${
+                        selectedModel === model.name
+                          ? isDark ? 'text-purple-300' : 'text-purple-700'
+                          : isDark ? 'text-slate-400' : 'text-slate-600'
+                      }`}>
+                        {(model.size / (1024 * 1024 * 1024)).toFixed(1)} GB
+                      </div>
+                    </motion.button>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <Bot className={`w-12 h-12 mx-auto mb-4 ${
+                    isDark ? 'text-slate-400' : 'text-slate-500'
+                  }`} />
+                  <p className={`font-semibold mb-2 ${
+                    isDark ? 'text-white' : 'text-slate-900'
                   }`}>
-                    {selectedModelData.description}
+                    No Models Available
                   </p>
-                  {!selectedModelData.isAvailable && selectedModelData.requiresKey && (
-                    <p className="text-xs text-yellow-400 mt-2">
-                      API key required for this model
-                    </p>
-                  )}
+                  <p className={`text-sm ${
+                    isDark ? 'text-slate-400' : 'text-slate-600'
+                  }`}>
+                    Install models with: ollama pull llama2
+                  </p>
                 </div>
               )}
             </div>
@@ -489,25 +545,21 @@ const ChatPage: React.FC = () => {
               {/* Chat Header */}
               <div className="p-6 border-b border-white/10 flex items-center justify-between flex-shrink-0">
                 <div className="flex items-center space-x-3">
-                  {selectedModelData && (
-                    <>
-                      <div className={`p-2 rounded-xl bg-gradient-to-r from-glow-purple to-glow-pink`}>
-                        <Brain className="w-5 h-5 text-white" />
-                      </div>
-                      <div>
-                        <h3 className={`font-semibold transition-colors ${
-                          isDark ? 'text-white' : 'text-slate-900'
-                        }`}>
-                          {selectedModelData.name}
-                        </h3>
-                        <p className={`text-sm transition-colors ${
-                          isDark ? 'text-slate-400' : 'text-slate-600'
-                        }`}>
-                          {selectedModelData.provider}
-                        </p>
-                      </div>
-                    </>
-                  )}
+                  <div className={`p-2 rounded-xl bg-gradient-to-r from-glow-purple to-glow-pink`}>
+                    <Brain className="w-5 h-5 text-white" />
+                  </div>
+                  <div>
+                    <h3 className={`font-semibold transition-colors ${
+                      isDark ? 'text-white' : 'text-slate-900'
+                    }`}>
+                      {selectedModel || 'No Model Selected'}
+                    </h3>
+                    <p className={`text-sm transition-colors ${
+                      isDark ? 'text-slate-400' : 'text-slate-600'
+                    }`}>
+                      Ollama Local AI
+                    </p>
+                  </div>
                 </div>
 
                 <div className="flex items-center space-x-2">
@@ -576,7 +628,7 @@ const ChatPage: React.FC = () => {
                       <p className={`transition-colors ${
                         isDark ? 'text-slate-400' : 'text-slate-600'
                       }`}>
-                        Ask questions, seek insights, or discuss research topics
+                        Ask questions, seek insights, or discuss research topics with your local Ollama models
                       </p>
                     </div>
                   </div>
@@ -704,8 +756,8 @@ const ChatPage: React.FC = () => {
                     value={inputMessage}
                     onChange={(e) => setInputMessage(e.target.value)}
                     onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                    placeholder={hasValidApiKey ? "Ask the AI anything..." : "Configure API keys to start chatting..."}
-                    disabled={!hasValidApiKey}
+                    placeholder={ollamaConnected ? "Ask your local AI anything..." : "Start Ollama to begin chatting..."}
+                    disabled={!ollamaConnected}
                     className={`flex-1 p-4 rounded-2xl backdrop-blur-sm border transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-glow-purple disabled:opacity-50 ${
                       isDark
                         ? 'bg-white/5 border-white/10 text-white placeholder-slate-400'
@@ -713,7 +765,7 @@ const ChatPage: React.FC = () => {
                     }`}
                   />
                   
-                  {recognitionRef.current && hasValidApiKey && (
+                  {recognitionRef.current && ollamaConnected && (
                     <motion.button
                       whileHover={{ scale: 1.05 }}
                       whileTap={{ scale: 0.95 }}
@@ -734,7 +786,7 @@ const ChatPage: React.FC = () => {
                     whileHover={{ scale: 1.05 }}
                     whileTap={{ scale: 0.95 }}
                     onClick={handleSendMessage}
-                    disabled={!inputMessage.trim() || isTyping || !hasValidApiKey}
+                    disabled={!inputMessage.trim() || isTyping || !ollamaConnected}
                     className="bg-gradient-to-r from-glow-purple to-glow-pink text-white p-4 rounded-2xl shadow-glow hover:shadow-glow-lg transition-all duration-300 disabled:opacity-50"
                   >
                     <Send className="w-5 h-5" />
@@ -745,12 +797,6 @@ const ChatPage: React.FC = () => {
           </motion.div>
         </div>
       </div>
-
-      {/* API Key Manager Modal */}
-      <ApiKeyManager 
-        isOpen={showApiKeyManager} 
-        onClose={() => setShowApiKeyManager(false)} 
-      />
     </div>
   );
 };

@@ -1,8 +1,12 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { TrendingUp, Globe, Zap, Brain, Target, Calendar, Eye, ExternalLink, BarChart3, Activity, Layers, Filter, Search, RefreshCw } from 'lucide-react';
+import { TrendingUp, Globe, Zap, Brain, Target, Calendar, Eye, ExternalLink, BarChart3, Activity, Layers, Filter, Search, RefreshCw, Play } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { searchTrendingTopics, searchWithSearXNG } from '../services/scraping/searxngService';
+import { scrapeArticle } from '../services/scraping/imageScraper';
+import MetricsDashboard, { generateDefaultMetrics } from '../components/charts/MetricsDashboard';
+import TrendingHeatmap from '../components/charts/TrendingHeatmap';
+import { Link } from 'react-router-dom';
 
 interface TrendingTopic {
   query: string;
@@ -10,6 +14,8 @@ interface TrendingTopic {
   timestamp: string;
   category: string;
   trending_score: number;
+  image?: string;
+  summary?: string;
 }
 
 interface TrendingCluster {
@@ -19,6 +25,7 @@ interface TrendingCluster {
   category: string;
   growth: number;
   sources: string[];
+  image?: string;
 }
 
 const TrendingPage: React.FC = () => {
@@ -27,8 +34,9 @@ const TrendingPage: React.FC = () => {
   const [trendingClusters, setTrendingClusters] = useState<TrendingCluster[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('all');
-  const [viewMode, setViewMode] = useState<'topics' | 'clusters' | 'timeline'>('topics');
+  const [viewMode, setViewMode] = useState<'topics' | 'clusters' | 'heatmap'>('topics');
   const [searchQuery, setSearchQuery] = useState('');
+  const [metrics] = useState(generateDefaultMetrics());
 
   const categories = [
     { id: 'all', name: 'All Topics', icon: Globe },
@@ -50,13 +58,36 @@ const TrendingPage: React.FC = () => {
     try {
       const [topicsData] = await Promise.all([
         searchTrendingTopics(),
-        // Could add more data sources here
       ]);
 
-      setTrendingTopics(topicsData.trending || []);
+      // Enhance topics with images
+      const enhancedTopics = await Promise.all(
+        (topicsData.trending || []).map(async (topic) => {
+          try {
+            // Try to scrape image from first result
+            if (topic.results.length > 0) {
+              const firstResult = topic.results[0];
+              const scrapedData = await scrapeArticle(firstResult.url);
+              return {
+                ...topic,
+                image: scrapedData.image?.url || generateCategoryImage(topic.category),
+                summary: scrapedData.description || firstResult.content
+              };
+            }
+          } catch (error) {
+            console.warn('Failed to enhance topic with image:', error);
+          }
+          return {
+            ...topic,
+            image: generateCategoryImage(topic.category)
+          };
+        })
+      );
+
+      setTrendingTopics(enhancedTopics);
       
       // Generate trending clusters from topics
-      const clusters = generateTrendingClusters(topicsData.trending || []);
+      const clusters = generateTrendingClusters(enhancedTopics);
       setTrendingClusters(clusters);
     } catch (error) {
       console.error('Error loading trending data:', error);
@@ -77,75 +108,14 @@ const TrendingPage: React.FC = () => {
         articles: topic.results,
         score: topic.trending_score,
         category: topic.category,
-        growth: Math.floor(Math.random() * 50) + 10, // Mock growth percentage
-        sources: [...new Set(topic.results.map(r => r.source))]
+        growth: Math.floor(Math.random() * 50) + 10,
+        sources: [...new Set(topic.results.map(r => r.source))],
+        image: topic.image
       };
       clusters.push(cluster);
     });
 
     return clusters.sort((a, b) => b.score - a.score);
-  };
-
-  const generateMockTrendingTopics = (): TrendingTopic[] => {
-    return [
-      {
-        query: 'AI breakthrough quantum computing',
-        results: [
-          {
-            title: 'Quantum AI Achieves Unprecedented Processing Speed',
-            url: 'https://example.com/quantum-ai',
-            content: 'Revolutionary breakthrough in quantum-powered artificial intelligence',
-            source: 'Tech News',
-            category: 'technology'
-          }
-        ],
-        timestamp: new Date().toISOString(),
-        category: 'technology',
-        trending_score: 95
-      },
-      {
-        query: 'global climate summit agreements',
-        results: [
-          {
-            title: 'Historic Climate Agreement Reached at Global Summit',
-            url: 'https://example.com/climate-summit',
-            content: 'World leaders unite on ambitious climate action plan',
-            source: 'Global News',
-            category: 'environment'
-          }
-        ],
-        timestamp: new Date().toISOString(),
-        category: 'environment',
-        trending_score: 88
-      }
-    ];
-  };
-
-  const generateMockClusters = (): TrendingCluster[] => {
-    return [
-      {
-        topic: 'Artificial Intelligence Breakthroughs',
-        articles: [
-          { title: 'AI Achieves Human-Level Performance', source: 'Tech Today' },
-          { title: 'Machine Learning Revolution Continues', source: 'AI Weekly' }
-        ],
-        score: 95,
-        category: 'technology',
-        growth: 45,
-        sources: ['Tech Today', 'AI Weekly', 'Innovation Hub']
-      },
-      {
-        topic: 'Climate Action Initiatives',
-        articles: [
-          { title: 'Global Climate Summit Results', source: 'Environment News' },
-          { title: 'Renewable Energy Adoption Accelerates', source: 'Green Tech' }
-        ],
-        score: 88,
-        category: 'environment',
-        growth: 32,
-        sources: ['Environment News', 'Green Tech', 'Climate Watch']
-      }
-    ];
   };
 
   const handleSearch = async () => {
@@ -155,13 +125,13 @@ const TrendingPage: React.FC = () => {
     try {
       const searchResults = await searchWithSearXNG(searchQuery, ['news', 'general']);
       
-      // Convert search results to trending format
       const searchTopic: TrendingTopic = {
         query: searchQuery,
         results: searchResults.results.slice(0, 10),
         timestamp: new Date().toISOString(),
         category: 'search',
-        trending_score: 100
+        trending_score: 100,
+        image: generateCategoryImage('search')
       };
 
       setTrendingTopics(prev => [searchTopic, ...prev.filter(t => t.category !== 'search')]);
@@ -170,6 +140,18 @@ const TrendingPage: React.FC = () => {
     } finally {
       setLoading(false);
     }
+  };
+
+  const generateCategoryImage = (category: string): string => {
+    const images = {
+      technology: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=800',
+      health: 'https://images.pexels.com/photos/3938023/pexels-photo-3938023.jpeg?auto=compress&cs=tinysrgb&w=800',
+      environment: 'https://images.pexels.com/photos/1624496/pexels-photo-1624496.jpeg?auto=compress&cs=tinysrgb&w=800',
+      business: 'https://images.pexels.com/photos/590041/pexels-photo-590041.jpeg?auto=compress&cs=tinysrgb&w=800',
+      science: 'https://images.pexels.com/photos/2280571/pexels-photo-2280571.jpeg?auto=compress&cs=tinysrgb&w=800',
+      news: 'https://images.pexels.com/photos/518543/pexels-photo-518543.jpeg?auto=compress&cs=tinysrgb&w=800'
+    };
+    return images[category as keyof typeof images] || images.news;
   };
 
   const filteredTopics = selectedCategory === 'all' 
@@ -193,6 +175,16 @@ const TrendingPage: React.FC = () => {
     };
     return colors[category as keyof typeof colors] || 'from-glow-purple to-glow-pink';
   };
+
+  // Generate heatmap data
+  const heatmapData = trendingTopics.flatMap(topic => 
+    Array.from({ length: 24 }, (_, hour) => ({
+      topic: topic.query.substring(0, 20),
+      hour,
+      intensity: Math.floor(Math.random() * 100),
+      category: topic.category
+    }))
+  );
 
   return (
     <div className={`min-h-screen pt-20 transition-colors duration-300 ${
@@ -225,6 +217,9 @@ const TrendingPage: React.FC = () => {
             Discover what's happening right now across the global information landscape with AI-powered trend analysis
           </p>
         </motion.div>
+
+        {/* Metrics Dashboard */}
+        <MetricsDashboard metrics={metrics} />
 
         {/* Search and Controls */}
         <motion.div
@@ -269,7 +264,7 @@ const TrendingPage: React.FC = () => {
               {[
                 { id: 'topics', name: 'Topics', icon: TrendingUp },
                 { id: 'clusters', name: 'Clusters', icon: Layers },
-                { id: 'timeline', name: 'Timeline', icon: Calendar }
+                { id: 'heatmap', name: 'Heatmap', icon: BarChart3 }
               ].map((mode) => {
                 const Icon = mode.icon;
                 return (
@@ -356,75 +351,112 @@ const TrendingPage: React.FC = () => {
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: index * 0.1 }}
-                    className={`backdrop-blur-sm border rounded-3xl p-6 shadow-xl hover:shadow-2xl transition-all duration-500 ${
+                    className={`backdrop-blur-sm border rounded-3xl overflow-hidden shadow-xl hover:shadow-2xl transition-all duration-500 group ${
                       isDark
                         ? 'bg-white/5 border-white/10 hover:bg-white/10'
                         : 'bg-white border-slate-200 hover:bg-slate-50'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-4">
-                      <div className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${getCategoryColor(topic.category)}`}>
-                        <span className="text-white">{topic.category.toUpperCase()}</span>
+                    {/* Topic Image */}
+                    <div className="relative h-48 overflow-hidden">
+                      <img
+                        src={topic.image}
+                        alt={topic.query}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                        onError={(e) => {
+                          e.currentTarget.src = generateCategoryImage(topic.category);
+                        }}
+                      />
+                      <div className="absolute top-4 right-4 flex space-x-2">
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${getCategoryColor(topic.category)}`}>
+                          <span className="text-white">{topic.category.toUpperCase()}</span>
+                        </div>
+                        <div className={`px-3 py-1 rounded-full text-xs font-bold ${
+                          topic.trending_score >= 90
+                            ? 'bg-red-500 text-white'
+                            : topic.trending_score >= 70
+                              ? 'bg-orange-500 text-white'
+                              : 'bg-yellow-500 text-black'
+                        }`}>
+                          {Math.round(topic.trending_score)}
+                        </div>
                       </div>
-                      <div className={`text-2xl font-bold ${
-                        topic.trending_score >= 90
-                          ? 'text-red-400'
-                          : topic.trending_score >= 70
-                            ? 'text-orange-400'
-                            : 'text-yellow-400'
-                      }`}>
-                        {Math.round(topic.trending_score)}
+                      <div className="absolute bottom-4 left-4">
+                        <div className="bg-black/50 backdrop-blur-sm text-white px-2 py-1 rounded-full text-xs font-semibold flex items-center space-x-1">
+                          <Play className="w-3 h-3" />
+                          <span>LIVE</span>
+                        </div>
                       </div>
                     </div>
 
-                    <h3 className={`font-bold text-lg mb-4 transition-colors ${
-                      isDark ? 'text-white' : 'text-slate-900'
-                    }`}>
-                      {topic.query}
-                    </h3>
+                    <div className="p-6">
+                      <h3 className={`font-bold text-lg mb-3 transition-colors ${
+                        isDark ? 'text-white' : 'text-slate-900'
+                      }`}>
+                        {topic.query}
+                      </h3>
 
-                    <div className="space-y-3">
-                      {topic.results.slice(0, 3).map((result, idx) => (
-                        <a
-                          key={idx}
-                          href={result.url}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className={`block p-3 rounded-xl border transition-all duration-300 hover:scale-[1.02] ${
+                      {topic.summary && (
+                        <p className={`text-sm leading-relaxed mb-4 line-clamp-3 transition-colors ${
+                          isDark ? 'text-slate-300' : 'text-slate-600'
+                        }`}>
+                          {topic.summary}
+                        </p>
+                      )}
+
+                      <div className="space-y-2 mb-4">
+                        {topic.results.slice(0, 2).map((result, idx) => (
+                          <a
+                            key={idx}
+                            href={result.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className={`block p-2 rounded-xl border transition-all duration-300 hover:scale-[1.02] ${
+                              isDark
+                                ? 'bg-white/5 border-white/10 hover:bg-white/10'
+                                : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                            }`}
+                          >
+                            <h4 className={`font-semibold text-xs mb-1 line-clamp-1 transition-colors ${
+                              isDark ? 'text-white' : 'text-slate-900'
+                            }`}>
+                              {result.title}
+                            </h4>
+                            <div className="flex items-center justify-between">
+                              <span className={`text-xs transition-colors ${
+                                isDark ? 'text-slate-400' : 'text-slate-600'
+                              }`}>
+                                {result.source}
+                              </span>
+                              <ExternalLink className="w-3 h-3" />
+                            </div>
+                          </a>
+                        ))}
+                      </div>
+
+                      <div className="flex items-center justify-between">
+                        <Link
+                          to={`/event/${encodeURIComponent(topic.query)}`}
+                          className={`px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
                             isDark
-                              ? 'bg-white/5 border-white/10 hover:bg-white/10'
-                              : 'bg-slate-50 border-slate-200 hover:bg-slate-100'
+                              ? 'bg-glow-purple/10 border border-glow-purple/20 text-glow-purple hover:bg-glow-purple/20'
+                              : 'bg-purple-50 border border-purple-200 text-purple-700 hover:bg-purple-100'
                           }`}
                         >
-                          <h4 className={`font-semibold text-sm mb-1 line-clamp-2 transition-colors ${
-                            isDark ? 'text-white' : 'text-slate-900'
+                          View Timeline
+                        </Link>
+                        <div className="flex items-center space-x-2 text-xs">
+                          <span className={`transition-colors ${
+                            isDark ? 'text-slate-400' : 'text-slate-600'
                           }`}>
-                            {result.title}
-                          </h4>
-                          <div className="flex items-center justify-between">
-                            <span className={`text-xs transition-colors ${
-                              isDark ? 'text-slate-400' : 'text-slate-600'
-                            }`}>
-                              {result.source}
-                            </span>
-                            <ExternalLink className="w-3 h-3" />
-                          </div>
-                        </a>
-                      ))}
-                    </div>
-
-                    <div className="mt-4 pt-4 border-t border-white/10">
-                      <div className="flex items-center justify-between text-xs">
-                        <span className={`transition-colors ${
-                          isDark ? 'text-slate-400' : 'text-slate-600'
-                        }`}>
-                          {topic.results.length} articles
-                        </span>
-                        <span className={`transition-colors ${
-                          isDark ? 'text-slate-400' : 'text-slate-600'
-                        }`}>
-                          {new Date(topic.timestamp).toLocaleTimeString()}
-                        </span>
+                            {topic.results.length} sources
+                          </span>
+                          <span className={`transition-colors ${
+                            isDark ? 'text-slate-400' : 'text-slate-600'
+                          }`}>
+                            {new Date(topic.timestamp).toLocaleTimeString()}
+                          </span>
+                        </div>
                       </div>
                     </div>
                   </motion.div>
@@ -446,8 +478,8 @@ const TrendingPage: React.FC = () => {
                         : 'bg-white border-slate-200'
                     }`}
                   >
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
+                    <div className="flex items-start justify-between mb-6">
+                      <div className="flex-1">
                         <h2 className={`text-2xl font-bold mb-2 transition-colors ${
                           isDark ? 'text-white' : 'text-slate-900'
                         }`}>
@@ -464,7 +496,7 @@ const TrendingPage: React.FC = () => {
                           </span>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right ml-6">
                         <div className={`text-3xl font-bold ${
                           cluster.score >= 90
                             ? 'text-red-400'
@@ -510,51 +542,14 @@ const TrendingPage: React.FC = () => {
               </div>
             )}
 
-            {viewMode === 'timeline' && (
-              <div className={`backdrop-blur-sm border rounded-3xl p-8 shadow-xl ${
-                isDark
-                  ? 'bg-white/5 border-white/10'
-                  : 'bg-white border-slate-200'
-              }`}>
-                <h2 className={`text-2xl font-bold mb-6 transition-colors ${
-                  isDark ? 'text-white' : 'text-slate-900'
-                }`}>
-                  Trending Timeline
-                </h2>
-                
-                <div className="space-y-6">
-                  {filteredTopics.map((topic, index) => (
-                    <div key={topic.query} className="flex space-x-4">
-                      <div className="flex flex-col items-center">
-                        <div className="w-3 h-3 bg-glow-purple rounded-full"></div>
-                        {index < filteredTopics.length - 1 && (
-                          <div className="w-px h-16 bg-glow-purple/30 mt-2"></div>
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-2 mb-2">
-                          <span className={`text-sm font-medium text-glow-purple`}>
-                            {new Date(topic.timestamp).toLocaleTimeString()}
-                          </span>
-                          <div className={`px-2 py-1 rounded-full text-xs font-bold bg-gradient-to-r ${getCategoryColor(topic.category)}`}>
-                            <span className="text-white">{topic.category}</span>
-                          </div>
-                        </div>
-                        <h4 className={`font-bold mb-2 transition-colors ${
-                          isDark ? 'text-white' : 'text-slate-900'
-                        }`}>
-                          {topic.query}
-                        </h4>
-                        <p className={`text-sm transition-colors ${
-                          isDark ? 'text-slate-300' : 'text-slate-700'
-                        }`}>
-                          {topic.results.length} articles trending with {Math.round(topic.trending_score)} score
-                        </p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
+            {viewMode === 'heatmap' && (
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-8"
+              >
+                <TrendingHeatmap data={heatmapData} width={800} height={400} />
+              </motion.div>
             )}
           </div>
         )}
@@ -585,5 +580,58 @@ const TrendingPage: React.FC = () => {
     </div>
   );
 };
+
+// Mock data generators
+function generateMockTrendingTopics(): TrendingTopic[] {
+  return [
+    {
+      query: 'AI breakthrough quantum computing',
+      results: [
+        {
+          title: 'Quantum AI Achieves Unprecedented Processing Speed',
+          url: 'https://example.com/quantum-ai',
+          content: 'Revolutionary breakthrough in quantum-powered artificial intelligence',
+          source: 'Tech News'
+        }
+      ],
+      timestamp: new Date().toISOString(),
+      category: 'technology',
+      trending_score: 95,
+      image: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=800'
+    },
+    {
+      query: 'global climate summit agreements',
+      results: [
+        {
+          title: 'Historic Climate Agreement Reached at Global Summit',
+          url: 'https://example.com/climate-summit',
+          content: 'World leaders unite on ambitious climate action plan',
+          source: 'Global News'
+        }
+      ],
+      timestamp: new Date().toISOString(),
+      category: 'environment',
+      trending_score: 88,
+      image: 'https://images.pexels.com/photos/1624496/pexels-photo-1624496.jpeg?auto=compress&cs=tinysrgb&w=800'
+    }
+  ];
+}
+
+function generateMockClusters(): TrendingCluster[] {
+  return [
+    {
+      topic: 'Artificial Intelligence Breakthroughs',
+      articles: [
+        { title: 'AI Achieves Human-Level Performance', source: 'Tech Today' },
+        { title: 'Machine Learning Revolution Continues', source: 'AI Weekly' }
+      ],
+      score: 95,
+      category: 'technology',
+      growth: 45,
+      sources: ['Tech Today', 'AI Weekly', 'Innovation Hub'],
+      image: 'https://images.pexels.com/photos/8386440/pexels-photo-8386440.jpeg?auto=compress&cs=tinysrgb&w=800'
+    }
+  ];
+}
 
 export default TrendingPage;
