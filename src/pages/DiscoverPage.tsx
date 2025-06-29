@@ -1,30 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
-import { 
-  Compass, 
-  TrendingUp, 
-  Clock, 
-  Eye, 
-  ExternalLink, 
-  Filter, 
-  Search,
-  Sparkles,
-  Globe,
-  Zap,
-  Brain,
-  Target,
-  ArrowRight,
-  Calendar,
-  Tag,
-  Play,
-  BookOpen,
-  Timeline,
-  Layers,
-  RefreshCw,
-  ChevronLeft,
-  ChevronRight,
-  X
-} from 'lucide-react';
+import { Compass, TrendingUp, Clock, Eye, ExternalLink, Filter, Search, Sparkles, Globe, Zap, Brain, Target, ArrowRight, Calendar, Tag, Play, BookOpen, Baseline as Timeline, Layers, RefreshCw, ChevronLeft, ChevronRight, X } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { supabase } from '../lib/supabase';
 import { searchNews, searchTrendingTopics, searchSearXNG } from '../services/api/searxng.js';

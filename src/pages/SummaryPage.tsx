@@ -1,24 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { 
-  ArrowLeft, 
-  Brain, 
-  ExternalLink, 
-  Share2, 
-  Bookmark, 
-  Download,
-  Clock,
-  Eye,
-  TrendingUp,
-  Target,
-  Globe,
-  Zap,
-  CheckCircle,
-  AlertTriangle,
-  Timeline,
-  Layers
-} from 'lucide-react';
+import { ArrowLeft, Brain, ExternalLink, Share2, Bookmark, Download, Clock, Eye, TrendingUp, Target, Globe, Zap, CheckCircle, AlertTriangle, Baseline as Timeline, Layers } from 'lucide-react';
 import { useTheme } from '../contexts/ThemeContext';
 import { generateSmartSummary, generateEventTimeline } from '../services/api/summarization.js';
 import { searchSearXNG } from '../services/api/searxng.js';
